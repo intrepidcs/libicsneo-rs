@@ -13,3 +13,7 @@ keywords = ["libicsneo"]
 
 [dependencies]
 libicsneo-sys = "0.1.3"
+
+[features]
+default = ["test_zero_devices"]
+test_zero_devices = []
