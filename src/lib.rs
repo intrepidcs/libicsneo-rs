@@ -533,6 +533,46 @@ pub mod icsneo {
         }
     }
 
+    /// See [icsneo_getBaudrate()](libicsneo_sys::icsneo_getBaudrate) for more details
+    ///
+    /// TODO: Description here
+    pub fn get_baudrate(device: &neodevice_t, netid: neonetid_t) -> i64 {
+        // extern int64_t DLLExport icsneo_getBaudrate(const neodevice_t* device, neonetid_t netid);
+        unsafe {
+            icsneo_getBaudrate(device, netid)
+        }
+    }
+
+    /// See [icsneo_setBaudrate()](libicsneo_sys::icsneo_setBaudrate) for more details
+    ///
+    /// TODO: Description here
+    pub fn set_baudrate(device: &neodevice_t, netid: neonetid_t, new_baudrate: i64) -> bool {
+        // extern int64_t DLLExport icsneo_getBaudrate(const neodevice_t* device, neonetid_t netid);
+        unsafe {
+            icsneo_setBaudrate(device, netid, new_baudrate)
+        }
+    }
+
+    /// See [icsneo_getFDBaudrate()](libicsneo_sys::icsneo_getFDBaudrate) for more details
+    ///
+    /// TODO: Description here
+    pub fn get_fd_baudrate(device: &neodevice_t, netid: neonetid_t) -> i64 {
+        // extern int64_t DLLExport icsneo_getFDBaudrate(const neodevice_t* device, neonetid_t netid);
+        unsafe {
+            icsneo_getFDBaudrate(device, netid)
+        }
+    }
+
+    /// See [icsneo_setFDBaudrate()](libicsneo_sys::icsneo_setFDBaudrate) for more details
+    ///
+    /// TODO: Description here
+    pub fn set_fd_baudrate(device: &neodevice_t, netid: neonetid_t, new_baudrate: i64) -> bool {
+        // extern int64_t DLLExport icsneo_setFDBaudrate(const neodevice_t* device, neonetid_t netid);
+        unsafe {
+            icsneo_setFDBaudrate(device, netid, new_baudrate)
+        }
+    }
+
     // TODO: extern int DLLExport icsneo_addMessageCallback(const neodevice_t* device, void (*callback)(neomessage_t), void*);
     // TODO: extern bool DLLExport icsneo_removeMessageCallback(const neodevice_t* device, int id);
     /* TODO:
@@ -551,14 +591,11 @@ pub mod icsneo {
     
     
 
-    extern int64_t DLLExport icsneo_getBaudrate(const neodevice_t* device, neonetid_t netid);
-    extern bool DLLExport icsneo_setBaudrate(const neodevice_t* device, neonetid_t netid, int64_t newBaudrate);
-    extern int64_t DLLExport icsneo_getFDBaudrate(const neodevice_t* device, neonetid_t netid);
-    extern bool DLLExport icsneo_setFDBaudrate(const neodevice_t* device, neonetid_t netid, int64_t newBaudrate);
+    
     
     extern void DLLExport icsneo_setWriteBlocks(const neodevice_t* device, bool blocks);
     
-    extern neoversion_t DLLExport icsneo_getVersion(void);
+    
     extern int DLLExport icsneo_addEventCallback(void (*callback)(neoevent_t), void*);
     extern bool DLLExport icsneo_removeEventCallback(int id);
     extern bool DLLExport icsneo_getEvents(neoevent_t* events, size_t* size);
@@ -608,6 +645,13 @@ pub mod icsneo {
 
     extern bool DLLExport icsneo_getProductName(const neodevice_t* device, char* str, size_t* maxLength);
     extern bool DLLExport icsneo_getProductNameForType(devicetype_t type, char* str, size_t* maxLength);
+
+    extern neoversion_t DLLExport icsneo_getVersion(void);
+
+    extern int64_t DLLExport icsneo_getBaudrate(const neodevice_t* device, neonetid_t netid);
+    extern bool DLLExport icsneo_setBaudrate(const neodevice_t* device, neonetid_t netid, int64_t newBaudrate);
+    extern int64_t DLLExport icsneo_getFDBaudrate(const neodevice_t* device, neonetid_t netid);
+    extern bool DLLExport icsneo_setFDBaudrate(const neodevice_t* device, neonetid_t netid, int64_t newBaudrate);
     */
 }
 
