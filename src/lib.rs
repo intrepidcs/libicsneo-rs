@@ -573,8 +573,251 @@ pub mod icsneo {
         }
     }
 
+    /// See [icsneo_setWriteBlocks()](libicsneo_sys::icsneo_setWriteBlocks) for more details
+    ///
+    /// TODO: Description here
+    pub fn set_write_blocks(device: &neodevice_t, blocks: bool) {
+        // extern void DLLExport icsneo_setWriteBlocks(const neodevice_t* device, bool blocks);
+        unsafe {
+            icsneo_setWriteBlocks(device, blocks);
+        }
+    }
+
+    /// See [icsneo_getEvents()](libicsneo_sys::icsneo_getEvents) for more details
+    ///
+    /// TODO: Description here
+    pub fn get_events() -> Result<Vec<neoevent_t>, Error> {
+        // extern bool DLLExport icsneo_getEvents(neoevent_t* events, size_t* size);
+        let mut size: size_t = 0;
+        let success = unsafe {
+            icsneo_getEvents(std::ptr::null_mut(), &mut size)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getEvents() failed!".to_string()));
+        }
+        let mut events = Vec::with_capacity(size as usize);
+        for _ in 0..size {
+            events.push(neoevent_t {
+                description: 0 as *const std::os::raw::c_char,
+                timestamp: 0,
+                eventNumber: 0,
+                severity: 0,
+                serial: [0i8; 7],
+                reserved: [0u8; 16],
+            });
+        };
+        let success = unsafe {
+            icsneo_getEvents(events.as_mut_ptr(), &mut size)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getEvents() failed!".to_string()));
+        }
+        Ok(events)
+    }
+
+    /// See [icsneo_getDeviceEvents()](libicsneo_sys::icsneo_getDeviceEvents) for more details
+    ///
+    /// TODO: Description here
+    pub fn get_device_events(device: &neodevice_t) -> Result<Vec<neoevent_t>, Error> {
+        // extern bool DLLExport icsneo_getDeviceEvents(const neodevice_t* device, neoevent_t* events, size_t* size);
+        let mut size: size_t = 0;
+        let success = unsafe {
+            icsneo_getDeviceEvents(device, std::ptr::null_mut(), &mut size)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getEvents() failed!".to_string()));
+        }
+        let mut events = Vec::with_capacity(size as usize);
+        for _ in 0..size {
+            events.push(neoevent_t {
+                description: 0 as *const std::os::raw::c_char,
+                timestamp: 0,
+                eventNumber: 0,
+                severity: 0,
+                serial: [0i8; 7],
+                reserved: [0u8; 16],
+            });
+        };
+        let success = unsafe {
+            icsneo_getDeviceEvents(device, events.as_mut_ptr(), &mut size)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getEvents() failed!".to_string()));
+        }
+        Ok(events)
+    }
+
+    /// See [icsneo_discardAllEvents()](libicsneo_sys::icsneo_discardAllEvents) for more details
+    ///
+    /// TODO: Description here
+    pub fn discard_all_events() {
+        // extern void DLLExport icsneo_discardAllEvents(void);
+        unsafe {
+            icsneo_discardAllEvents();
+        };
+    }
+
+    /// See [icsneo_discardDeviceEvents()](libicsneo_sys::icsneo_discardDeviceEvents) for more details
+    ///
+    /// TODO: Description here
+    pub fn discard_all_device_events(device: &neodevice_t) {
+        // extern void DLLExport icsneo_discardDeviceEvents(const neodevice_t* device);
+        unsafe {
+            icsneo_discardDeviceEvents(device);
+        };
+    }
+
+    /// See [icsneo_setEventLimit()](libicsneo_sys::icsneo_setEventLimit) for more details
+    ///
+    /// TODO: Description here
+    pub fn set_event_limit(new_limit: size_t) {
+        // extern void DLLExport icsneo_setEventLimit(size_t newLimit);
+        unsafe {
+            icsneo_setEventLimit(new_limit);
+        };
+    }
+
+    /// See [icsneo_getEventLimit()](libicsneo_sys::icsneo_getEventLimit) for more details
+    ///
+    /// TODO: Description here
+    pub fn get_event_limit() -> size_t {
+        // extern size_t DLLExport icsneo_getEventLimit(void);
+        unsafe {
+            icsneo_getEventLimit()
+        }
+    }
+
+    /// See [icsneo_getSupportedDevices()](libicsneo_sys::icsneo_getSupportedDevices) for more details
+    ///
+    /// TODO: Description here
+    pub fn get_supported_devices() -> Result<Vec<devicetype_t>, Error> {
+        // extern bool DLLExport icsneo_getSupportedDevices(devicetype_t* devices, size_t* count);
+        let mut size: size_t = 0;
+        let success = unsafe {
+            icsneo_getSupportedDevices(std::ptr::null_mut(), &mut size)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getEvents() failed!".to_string()));
+        }
+        let mut device_types = Vec::with_capacity(size as usize);
+        for _ in 0..size {
+            device_types.push(0 as devicetype_t);
+        };
+        let success = unsafe {
+            icsneo_getSupportedDevices(device_types.as_mut_ptr(), &mut size)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getEvents() failed!".to_string()));
+        }
+        Ok(device_types)
+    }
+
+    /// See [icsneo_getTimestampResolution()](libicsneo_sys::icsneo_getTimestampResolution) for more details
+    ///
+    /// TODO: Description here
+    pub fn get_timestamp_resolution(device: &neodevice_t) -> Result<u16, Error> {
+        // extern bool DLLExport icsneo_getTimestampResolution(const neodevice_t* device, uint16_t* resolution);
+        let mut resolution = 0u16;
+        let success = unsafe {
+            icsneo_getTimestampResolution(device, &mut resolution)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getTimestampResolution() failed!".to_string()));
+        }
+        Ok(resolution)
+    }
+
+    /// See [icsneo_getDigitalIO()](libicsneo_sys::icsneo_getDigitalIO) for more details
+    ///
+    /// TODO: Description here
+    pub fn get_digital_io(device: &neodevice_t, io_type: neoio_t, io_number: u32) -> Result<bool, Error> {
+        // extern bool DLLExport icsneo_getTimestampResolution(const neodevice_t* device, uint16_t* resolution);
+        let mut value = false;
+        let success = unsafe {
+            icsneo_getDigitalIO(device, io_type, io_number, &mut value)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getTimestampResolution() failed!".to_string()));
+        }
+        Ok(value)
+    }
+
+    /// See [icsneo_setDigitalIO()](libicsneo_sys::icsneo_setDigitalIO) for more details
+    ///
+    /// TODO: Description here
+    pub fn set_digital_io(device: &neodevice_t, io_type: neoio_t, io_number: u32, value: bool) -> Result<(), Error> {
+        // extern bool DLLExport icsneo_setDigitalIO(const neodevice_t* device, neoio_t type, uint32_t number, bool value);
+        let success = unsafe {
+            icsneo_setDigitalIO(device, io_type, io_number, value)
+        };
+        if !success {
+            // TODO: Is this needed?
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_getTimestampResolution() failed!".to_string()));
+        }
+        Ok(())
+    }
+
+    /// See [icsneo_isTerminationSupportedFor()](libicsneo_sys::icsneo_isTerminationSupportedFor) for more details
+    ///
+    /// TODO: Description here
+    pub fn is_termination_supported_for(device: &neodevice_t, netid: neonetid_t) -> bool {
+        // extern bool DLLExport icsneo_isTerminationSupportedFor(const neodevice_t* device, neonetid_t netid);
+        unsafe {
+            icsneo_isTerminationSupportedFor(device, netid)
+        }
+    }
+
+    /// See [icsneo_canTerminationBeEnabledFor()](libicsneo_sys::icsneo_canTerminationBeEnabledFor) for more details
+    ///
+    /// TODO: Description here
+    pub fn can_termination_be_enabled_for(device: &neodevice_t, netid: neonetid_t) -> bool {
+        // extern bool DLLExport icsneo_canTerminationBeEnabledFor(const neodevice_t* device, neonetid_t netid);
+        unsafe {
+            icsneo_canTerminationBeEnabledFor(device, netid)
+        }
+    }
+
+    /// See [icsneo_isTerminationEnabledFor()](libicsneo_sys::icsneo_isTerminationEnabledFor) for more details
+    ///
+    /// TODO: Description here
+    pub fn is_termination_enabled_for(device: &neodevice_t, netid: neonetid_t) -> bool {
+        // extern bool DLLExport icsneo_isTerminationEnabledFor(const neodevice_t* device, neonetid_t netid);
+        unsafe {
+            icsneo_isTerminationEnabledFor(device, netid)
+        }
+    }
+
+    /// See [icsneo_setTerminationFor()](libicsneo_sys::icsneo_setTerminationFor) for more details
+    ///
+    /// TODO: Description here
+    pub fn set_termination_for(device: &neodevice_t, netid: neonetid_t, enabled: bool) -> bool {
+        // extern bool DLLExport icsneo_setTerminationFor(const neodevice_t* device, neonetid_t netid, bool enabled);
+        unsafe {
+            icsneo_setTerminationFor(device, netid, enabled)
+        }
+    }
+
     // TODO: extern int DLLExport icsneo_addMessageCallback(const neodevice_t* device, void (*callback)(neomessage_t), void*);
     // TODO: extern bool DLLExport icsneo_removeMessageCallback(const neodevice_t* device, int id);
+    // TODO: extern int DLLExport icsneo_addEventCallback(void (*callback)(neoevent_t), void*);
+    // TODO: extern bool DLLExport icsneo_removeEventCallback(int id);
     /* TODO:
             extern bool DLLExport icsneo_settingsRefresh(const neodevice_t* device);
             extern bool DLLExport icsneo_settingsApply(const neodevice_t* device);
@@ -588,33 +831,6 @@ pub mod icsneo {
     /*
     // TODO: PLACEHOLDER: Next ones on the list:
     
-    
-    
-
-    
-    
-    extern void DLLExport icsneo_setWriteBlocks(const neodevice_t* device, bool blocks);
-    
-    
-    extern int DLLExport icsneo_addEventCallback(void (*callback)(neoevent_t), void*);
-    extern bool DLLExport icsneo_removeEventCallback(int id);
-    extern bool DLLExport icsneo_getEvents(neoevent_t* events, size_t* size);
-    extern bool DLLExport icsneo_getDeviceEvents(const neodevice_t* device, neoevent_t* events, size_t* size);
-    
-    extern void DLLExport icsneo_discardAllEvents(void);
-    extern void DLLExport icsneo_discardDeviceEvents(const neodevice_t* device);
-    extern void DLLExport icsneo_setEventLimit(size_t newLimit);
-    extern size_t DLLExport icsneo_getEventLimit(void);
-    extern bool DLLExport icsneo_getSupportedDevices(devicetype_t* devices, size_t* count);
-    extern bool DLLExport icsneo_getTimestampResolution(const neodevice_t* device, uint16_t* resolution);
-    extern bool DLLExport icsneo_getDigitalIO(const neodevice_t* device, neoio_t type, uint32_t number, bool* value);
-    extern bool DLLExport icsneo_setDigitalIO(const neodevice_t* device, neoio_t type, uint32_t number, bool value);
-    extern bool DLLExport icsneo_isTerminationSupportedFor(const neodevice_t* device, neonetid_t netid);
-    extern bool DLLExport icsneo_canTerminationBeEnabledFor(const neodevice_t* device, neonetid_t netid);
-    extern bool DLLExport icsneo_isTerminationEnabledFor(const neodevice_t* device, neonetid_t netid);
-    extern bool DLLExport icsneo_setTerminationFor(const neodevice_t* device, neonetid_t netid, bool enabled);
-
-
     // DONE:
     extern void DLLExport icsneo_findAllDevices(neodevice_t* devices, size_t* count);
     extern void DLLExport icsneo_freeUnconnectedDevices();
@@ -652,6 +868,25 @@ pub mod icsneo {
     extern bool DLLExport icsneo_setBaudrate(const neodevice_t* device, neonetid_t netid, int64_t newBaudrate);
     extern int64_t DLLExport icsneo_getFDBaudrate(const neodevice_t* device, neonetid_t netid);
     extern bool DLLExport icsneo_setFDBaudrate(const neodevice_t* device, neonetid_t netid, int64_t newBaudrate);
+
+    extern void DLLExport icsneo_setWriteBlocks(const neodevice_t* device, bool blocks);
+
+    extern bool DLLExport icsneo_getEvents(neoevent_t* events, size_t* size);
+    extern bool DLLExport icsneo_getDeviceEvents(const neodevice_t* device, neoevent_t* events, size_t* size);
+    extern void DLLExport icsneo_discardAllEvents(void);
+    extern void DLLExport icsneo_discardDeviceEvents(const neodevice_t* device);
+
+    extern void DLLExport icsneo_setEventLimit(size_t newLimit);
+    extern size_t DLLExport icsneo_getEventLimit(void);
+    extern bool DLLExport icsneo_getSupportedDevices(devicetype_t* devices, size_t* count);
+    extern bool DLLExport icsneo_getTimestampResolution(const neodevice_t* device, uint16_t* resolution);
+
+    extern bool DLLExport icsneo_getDigitalIO(const neodevice_t* device, neoio_t type, uint32_t number, bool* value);
+    extern bool DLLExport icsneo_setDigitalIO(const neodevice_t* device, neoio_t type, uint32_t number, bool value);
+
+    extern bool DLLExport icsneo_isTerminationSupportedFor(const neodevice_t* device, neonetid_t netid);
+    extern bool DLLExport icsneo_canTerminationBeEnabledFor(const neodevice_t* device, neonetid_t netid);
+    extern bool DLLExport icsneo_isTerminationEnabledFor(const neodevice_t* device, neonetid_t netid);
     */
 }
 
