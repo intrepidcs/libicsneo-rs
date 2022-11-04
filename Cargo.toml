@@ -1,6 +1,6 @@
 [package]
 name = "libicsneo-rs"
-version = "0.1.2"
+version = "0.1.3"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/intrepidcs/libicsneo-rs"
@@ -12,7 +12,8 @@ keywords = ["libicsneo"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-libicsneo-sys = "0.1.6"
+#libicsneo-sys = { git = "https://github.com/intrepidcs/libicsneo-rs-sys.git" }
+libicsneo-sys = "0.1.9"
 
 [features]
 default = ["test_zero_devices"]

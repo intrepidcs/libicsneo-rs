@@ -26,6 +26,7 @@ pub mod icsneo {
         ErrorOccurred(neoevent_t),
         // Critical API error that shouldn't have happened.
         CriticalError(String),
+        DeviceInvalid,
     }
 
     /// Find all Intrepid devices connected. Returns a Result of Vec<neodevice_t>. See icsneo_findAllDevices for more details.
@@ -76,7 +77,8 @@ pub mod icsneo {
             if device_count == 0 {
                 return Err(Error::NoDevicesFound);
             }
-            match get_last_error() {
+            let event = get_last_error();
+            match event {
                 Some(e) => return Err(Error::ErrorOccurred(e)),
                 None => {},
             };
@@ -256,52 +258,183 @@ pub mod icsneo {
         Ok(success)
     }
 
+    pub fn enable_message_polling(device: &neodevice_t) -> bool {
+        unsafe {
+            icsneo_enableMessagePolling(device)
+        }
+    }
+
+    pub fn disable_message_polling(device: &neodevice_t) -> bool {
+        unsafe {
+            icsneo_disableMessagePolling(device)
+        }
+    }
+
+    pub fn is_message_polling_enabled(device: &neodevice_t) -> bool {
+        unsafe {
+            icsneo_isMessagePollingEnabled(device)
+        }
+    }
+
+
+    pub fn get_messages(device: &neodevice_t, timeout: u64) -> Result<Vec<neomessage_t>, Error> {
+        // extern bool DLLExport icsneo_getMessages(const neodevice_t* device, neomessage_t* messages, size_t* items, uint64_t timeout);
+        let mut count: u64 = 0;
+        let success = unsafe {
+            icsneo_getMessages(device, std::ptr::null_mut(), &mut count, timeout)
+        };
+        if !success {
+            match get_last_error() {
+                Some(e) => return Err(Error::ErrorOccurred(e)),
+                None => {},
+            };
+        }
+        // Initialize the messages
+        let mut messages = Vec::with_capacity(count as usize);
+        for _ in 0..count {
+            messages.push(neomessage_t {
+                _reserved1: [0u8; 16],
+                _reserved2: [0u8; 26],
+                _reserved3: [0u8; 12],
+                _reservedTimestamp: 0u64,
+                timestamp: 0u64,
+                messageType: 0u16,
+            });
+        };
+        // Grab the messages
+        let success = unsafe {
+            icsneo_getMessages(device, messages.as_mut_ptr(), &mut count, timeout)
+        };
+        if !success {
+            match get_last_error() {
+                Some(e) => return Err(Error::ErrorOccurred(e)),
+                None => {},
+            };
+        }
+        Ok(messages)
+    }
+
+    /// Returns message limit or Error::DeviceInvalid
+    pub fn get_polling_message_limit(device: &neodevice_t) -> Result<i32, Error> {
+        let count = unsafe {
+            icsneo_getPollingMessageLimit(device)
+        };
+        if count == -1 {
+            return Err(Error::DeviceInvalid);
+        };
+        Ok(count)
+    }
+
+    /// Sets the message limit or Error::ErrorOccurred
+    pub fn set_polling_message_limit(device: &neodevice_t, message_count: u64) -> Result<bool, Error> {
+        let success = unsafe {
+            icsneo_setPollingMessageLimit(device, message_count)
+        };
+        if !success {
+            match get_last_error() {
+                Some(e) => return Err(Error::ErrorOccurred(e)),
+                None => {},
+            };
+        };
+        Ok(true)
+    }
+
+    /// TODO
+    pub fn transmit(device: &neodevice_t, message: &neomessage_t) -> Result<bool, Error> {
+        let success = unsafe {
+            icsneo_transmit(device, message)
+        };
+        // TODO: Is this needed?
+        if !success {
+            match get_last_error() {
+                Some(e) => return Err(Error::ErrorOccurred(e)),
+                None => {},
+            };
+        }; 
+        Ok(success)
+    }
+
+    /// TODO
+    pub fn transmit_messages(device: &neodevice_t, messages: &Vec<neomessage_t>) -> Result<bool, Error> {
+        let success = unsafe {
+            icsneo_transmitMessages(device, messages.as_ptr(), messages.len() as u64)
+        };
+        // TODO: Is this needed?
+        if !success {
+            match get_last_error() {
+                Some(e) => return Err(Error::ErrorOccurred(e)),
+                None => {},
+            };
+        };
+        Ok(success)
+    }
+    
+    /// TODO
+    pub fn describe_device(device: &neodevice_t) -> Result<String, Error> {
+        let mut count = 0u64;
+        let success = unsafe {
+            icsneo_describeDevice(device, std::ptr::null_mut(), &mut count)
+        };
+        // icsneo_describeDevice returns false when we query for the str length.
+        if success {
+            return Err(Error::CriticalError("icsneo_serialNumToString() failed to query length!".to_string()));
+        }
+        // Need to account for the null terminator to prevent OBOE
+        count += 1;
+        let mut buffer: Vec<i8> = vec![0; count as usize];
+        let success = unsafe { 
+            icsneo_describeDevice(device, buffer.as_mut_ptr(), &mut count)
+        };
+        if !success {
+            let _result = get_last_error();
+            return Err(Error::CriticalError("icsneo_describeDevice() failed!".to_string()));
+        }
+        // Convert the CStr to a String on success
+        unsafe {
+            return match CStr::from_ptr(buffer.as_mut_ptr()).to_owned().to_str() {
+                Ok(s) => Ok(s.to_string()),
+                Err(e) => {
+                    let msg = format!("Failed to device description buffer to CString: {e}");
+                    Err(Error::CriticalError(msg))
+                },
+            };
+        };
+    }
+
+    //extern bool DLLExport icsneo_describeDevice(const neodevice_t* device, char* str, size_t* maxLength);
+
+    // TODO: extern int DLLExport icsneo_addMessageCallback(const neodevice_t* device, void (*callback)(neomessage_t), void*);
+    // TODO: extern bool DLLExport icsneo_removeMessageCallback(const neodevice_t* device, int id);
+    /* TODO:
+            extern bool DLLExport icsneo_settingsRefresh(const neodevice_t* device);
+            extern bool DLLExport icsneo_settingsApply(const neodevice_t* device);
+            extern bool DLLExport icsneo_settingsApplyTemporary(const neodevice_t* device);
+            extern bool DLLExport icsneo_settingsApplyDefaults(const neodevice_t* device);
+            extern bool DLLExport icsneo_settingsApplyDefaultsTemporary(const neodevice_t* device);
+            extern int DLLExport icsneo_settingsReadStructure(const neodevice_t* device, void* structure, size_t structureSize);
+            extern bool DLLExport icsneo_settingsApplyStructure(const neodevice_t* device, const void* structure, size_t structureSize);
+            extern bool DLLExport icsneo_settingsApplyStructureTemporary(const neodevice_t* device, const void* structure, size_t structureSize);
+    */
     /*
-    extern void DLLExport icsneo_findAllDevices(neodevice_t* devices, size_t* count);
-    extern void DLLExport icsneo_freeUnconnectedDevices();
-    extern bool DLLExport icsneo_serialNumToString(uint32_t num, char* str, size_t* count);
-    extern uint32_t DLLExport icsneo_serialStringToNum(const char* str);
-    extern bool DLLExport icsneo_isValidNeoDevice(const neodevice_t* device);
-    extern bool DLLExport icsneo_openDevice(const neodevice_t* device);
-    extern bool DLLExport icsneo_closeDevice(const neodevice_t* device);
-    extern bool DLLExport icsneo_isOpen(const neodevice_t* device);
-    extern bool DLLExport icsneo_goOnline(const neodevice_t* device);
-    extern bool DLLExport icsneo_goOffline(const neodevice_t* device);
-    extern bool DLLExport icsneo_isOnline(const neodevice_t* device);
     // TODO: PLACEHOLDER: Next ones on the list:
-    extern bool DLLExport icsneo_enableMessagePolling(const neodevice_t* device);
-    extern bool DLLExport icsneo_disableMessagePolling(const neodevice_t* device);
-    extern bool DLLExport icsneo_isMessagePollingEnabled(const neodevice_t* device);
-    extern bool DLLExport icsneo_getMessages(const neodevice_t* device, neomessage_t* messages, size_t* items, uint64_t timeout);
-    extern int DLLExport icsneo_getPollingMessageLimit(const neodevice_t* device);
-    extern bool DLLExport icsneo_setPollingMessageLimit(const neodevice_t* device, size_t newLimit);
-    extern int DLLExport icsneo_addMessageCallback(const neodevice_t* device, void (*callback)(neomessage_t), void*);
-    extern bool DLLExport icsneo_removeMessageCallback(const neodevice_t* device, int id);
+    
     extern neonetid_t DLLExport icsneo_getNetworkByNumber(const neodevice_t* device, neonettype_t type, unsigned int number);
     extern bool DLLExport icsneo_getProductName(const neodevice_t* device, char* str, size_t* maxLength);
     extern bool DLLExport icsneo_getProductNameForType(devicetype_t type, char* str, size_t* maxLength);
-    extern bool DLLExport icsneo_settingsRefresh(const neodevice_t* device);
-    extern bool DLLExport icsneo_settingsApply(const neodevice_t* device);
-    extern bool DLLExport icsneo_settingsApplyTemporary(const neodevice_t* device);
-    extern bool DLLExport icsneo_settingsApplyDefaults(const neodevice_t* device);
-    extern bool DLLExport icsneo_settingsApplyDefaultsTemporary(const neodevice_t* device);
-    extern int DLLExport icsneo_settingsReadStructure(const neodevice_t* device, void* structure, size_t structureSize);
-    extern bool DLLExport icsneo_settingsApplyStructure(const neodevice_t* device, const void* structure, size_t structureSize);
-    extern bool DLLExport icsneo_settingsApplyStructureTemporary(const neodevice_t* device, const void* structure, size_t structureSize);
+
     extern int64_t DLLExport icsneo_getBaudrate(const neodevice_t* device, neonetid_t netid);
     extern bool DLLExport icsneo_setBaudrate(const neodevice_t* device, neonetid_t netid, int64_t newBaudrate);
     extern int64_t DLLExport icsneo_getFDBaudrate(const neodevice_t* device, neonetid_t netid);
     extern bool DLLExport icsneo_setFDBaudrate(const neodevice_t* device, neonetid_t netid, int64_t newBaudrate);
-    extern bool DLLExport icsneo_transmit(const neodevice_t* device, const neomessage_t* message);
-    extern bool DLLExport icsneo_transmitMessages(const neodevice_t* device, const neomessage_t* messages, size_t count);
+    
     extern void DLLExport icsneo_setWriteBlocks(const neodevice_t* device, bool blocks);
-    extern bool DLLExport icsneo_describeDevice(const neodevice_t* device, char* str, size_t* maxLength);
+    
     extern neoversion_t DLLExport icsneo_getVersion(void);
     extern int DLLExport icsneo_addEventCallback(void (*callback)(neoevent_t), void*);
     extern bool DLLExport icsneo_removeEventCallback(int id);
     extern bool DLLExport icsneo_getEvents(neoevent_t* events, size_t* size);
     extern bool DLLExport icsneo_getDeviceEvents(const neodevice_t* device, neoevent_t* events, size_t* size);
-    extern bool DLLExport icsneo_getLastError(neoevent_t* error);
+    
     extern void DLLExport icsneo_discardAllEvents(void);
     extern void DLLExport icsneo_discardDeviceEvents(const neodevice_t* device);
     extern void DLLExport icsneo_setEventLimit(size_t newLimit);
@@ -315,6 +448,33 @@ pub mod icsneo {
     extern bool DLLExport icsneo_isTerminationEnabledFor(const neodevice_t* device, neonetid_t netid);
     extern bool DLLExport icsneo_setTerminationFor(const neodevice_t* device, neonetid_t netid, bool enabled);
 
+
+    // DONE:
+    extern void DLLExport icsneo_findAllDevices(neodevice_t* devices, size_t* count);
+    extern void DLLExport icsneo_freeUnconnectedDevices();
+    extern bool DLLExport icsneo_serialNumToString(uint32_t num, char* str, size_t* count);
+    extern uint32_t DLLExport icsneo_serialStringToNum(const char* str);
+    extern bool DLLExport icsneo_isValidNeoDevice(const neodevice_t* device);
+    extern bool DLLExport icsneo_openDevice(const neodevice_t* device);
+    extern bool DLLExport icsneo_closeDevice(const neodevice_t* device);
+    extern bool DLLExport icsneo_isOpen(const neodevice_t* device);
+    extern bool DLLExport icsneo_goOnline(const neodevice_t* device);
+    extern bool DLLExport icsneo_goOffline(const neodevice_t* device);
+    extern bool DLLExport icsneo_isOnline(const neodevice_t* device);
+    
+    extern bool DLLExport icsneo_enableMessagePolling(const neodevice_t* device);
+    extern bool DLLExport icsneo_disableMessagePolling(const neodevice_t* device);
+    extern bool DLLExport icsneo_isMessagePollingEnabled(const neodevice_t* device);
+    extern bool DLLExport icsneo_getMessages(const neodevice_t* device, neomessage_t* messages, size_t* items, uint64_t timeout);
+    
+    extern int DLLExport icsneo_getPollingMessageLimit(const neodevice_t* device);
+    extern bool DLLExport icsneo_setPollingMessageLimit(const neodevice_t* device, size_t newLimit);
+    extern bool DLLExport icsneo_getLastError(neoevent_t* error);
+
+    extern bool DLLExport icsneo_transmit(const neodevice_t* device, const neomessage_t* message);
+    extern bool DLLExport icsneo_transmitMessages(const neodevice_t* device, const neomessage_t* messages, size_t count);
+
+    extern bool DLLExport icsneo_describeDevice(const neodevice_t* device, char* str, size_t* maxLength);
     */
 }
 
