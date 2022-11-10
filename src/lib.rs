@@ -4,6 +4,7 @@
 use libicsneo_sys::neodevice_t;
 
 pub mod safe;
+mod python;
 
 /// Represents an Intrepid Control Systems Device
 #[derive(Debug)]

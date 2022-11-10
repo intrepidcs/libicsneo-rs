@@ -9,11 +9,14 @@ readme = "readme.md"
 description = "Rust API for libicsneo"
 keywords = ["libicsneo"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "libicsneo"
+crate-type = ["cdylib"]
+
 
 [dependencies]
-#libicsneo-sys = { git = "https://github.com/intrepidcs/libicsneo-rs-sys.git" }
-libicsneo-sys = "0.1.9"
+libicsneo-sys = "0.1.13"
+pyo3 = { version = "0.17.3", features = ["extension-module", "abi3", "abi3-py37", "anyhow", "chrono"] }
 
 [features]
 default = ["test_zero_devices"]

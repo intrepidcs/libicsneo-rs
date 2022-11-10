@@ -2,6 +2,9 @@
 use std::ffi::{CStr, CString};
 
 use libicsneo_sys::*;
+use pyo3::prelude::*;
+use pyo3::exceptions::PyOSError;
+use std::fmt;
 
 trait SerialNumber {
     fn get_serial_number(&self) -> String;
@@ -14,6 +17,9 @@ impl SerialNumber for libicsneo_sys::neodevice_t {
     }
 }
 
+
+type Result<T> = std::result::Result<T, Error>;
+
 #[derive(Debug)]
 pub enum Error {
     /// No devices were found.
@@ -23,6 +29,20 @@ pub enum Error {
     /// Critical API error that shouldn't have happened.
     CriticalError(String),
     DeviceInvalid,
+}
+
+impl std::error::Error for Error {}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Oh no!")
+    }
+}
+
+impl std::convert::From<Error> for PyErr {
+    fn from(err: Error) -> PyErr {
+        PyOSError::new_err(err.to_string())
+    }
 }
 
 /// Find all Intrepid devices connected. Returns a Result of Vec<neodevice_t>. See [icsneo_findAllDevices()](libicsneo_sys::icsneo_findAllDevices) for more details
@@ -44,7 +64,8 @@ pub enum Error {
 /// }
 /// */
 /// ```
-pub fn find_all_devices() -> Result<Vec<neodevice_t>, Error> {
+//#[pyfunction]
+pub fn find_all_devices() -> Result<Vec<neodevice_t>> {
     // Get the device count
     let device_count = unsafe {
         let mut device_count = 0;
@@ -87,17 +108,20 @@ pub fn find_all_devices() -> Result<Vec<neodevice_t>, Error> {
 /// Frees all unconnected devices. See [icsneo_freeUnconnectedDevices()](libicsneo_sys::icsneo_freeUnconnectedDevices) for more details
 ///
 /// TODO: Description here
-pub fn free_unconnected_devices() {
+#[pyfunction]
+pub fn free_unconnected_devices() -> Result<()> {
     // extern void DLLExport icsneo_freeUnconnectedDevices();
     unsafe {
         icsneo_freeUnconnectedDevices();
-    }
+    };
+    Ok(())
 }
 
 /// Converts a serial number integer to a string. See [icsneo_serialNumToString()](libicsneo_sys::icsneo_serialNumToString) for more details
 ///
 /// TODO: Description here
-pub fn serial_num_to_string(num: u32) -> Result<String, Error> {
+#[pyfunction]
+pub fn serial_num_to_string(num: u32) -> Result<String> {
     // extern bool DLLExport icsneo_serialNumToString(uint32_t num, char* str, size_t* count);
     
     // Grab the length needed
@@ -176,7 +200,7 @@ pub fn is_valid_neodevice(device: &neodevice_t) -> bool {
 /// Opens a neo device. See [icsneo_openDevice()](libicsneo_sys::icsneo_openDevice) for more details
 ///
 /// TODO: Description here
-pub fn open_device(device: &neodevice_t) -> Result<(), Error> {
+pub fn open_device(device: &neodevice_t) -> Result<()> {
     // extern bool DLLExport icsneo_openDevice(const neodevice_t* device);
     let success = unsafe {
         icsneo_openDevice(device)
@@ -193,7 +217,7 @@ pub fn open_device(device: &neodevice_t) -> Result<(), Error> {
 /// Closes a neo device. See [icsneo_closeDevice()](libicsneo_sys::icsneo_closeDevice) for more details
 ///
 /// TODO: Description here
-pub fn close_device(device: &neodevice_t) -> Result<(), Error> {
+pub fn close_device(device: &neodevice_t) -> Result<()> {
     // extern bool DLLExport icsneo_closeDevice(const neodevice_t* device);
     let success = unsafe {
         icsneo_closeDevice(device)
@@ -210,7 +234,7 @@ pub fn close_device(device: &neodevice_t) -> Result<(), Error> {
 /// Checks to see if a neo device is open. See [icsneo_isOpen()](libicsneo_sys::icsneo_isOpen) for more details
 ///
 /// TODO: Description here
-pub fn is_open(device: &neodevice_t) -> Result<bool, Error> {
+pub fn is_open(device: &neodevice_t) -> Result<bool> {
     // extern bool DLLExport icsneo_isOpen(const neodevice_t* device);
     let success = unsafe {
         icsneo_isOpen(device)
@@ -227,7 +251,7 @@ pub fn is_open(device: &neodevice_t) -> Result<bool, Error> {
 /// Goes online with a neo device. See [icsneo_goOnline()](libicsneo_sys::icsneo_goOnline) for more details
 ///
 /// TODO: Description here
-pub fn go_online(device: &neodevice_t) -> Result<(), Error> {
+pub fn go_online(device: &neodevice_t) -> Result<()> {
     // extern bool DLLExport icsneo_goOnline(const neodevice_t* device);
     let success = unsafe {
         icsneo_goOnline(device)
@@ -244,7 +268,7 @@ pub fn go_online(device: &neodevice_t) -> Result<(), Error> {
 /// Goes offline with a neo device. See [icsneo_goOffline()](libicsneo_sys::icsneo_goOffline) for more details
 ///
 /// TODO: Description here
-pub fn go_offline(device: &neodevice_t) -> Result<(), Error> {
+pub fn go_offline(device: &neodevice_t) -> Result<()> {
     // extern bool DLLExport icsneo_goOffline(const neodevice_t* device);
     let success = unsafe {
         icsneo_goOffline(device)
@@ -261,7 +285,7 @@ pub fn go_offline(device: &neodevice_t) -> Result<(), Error> {
 /// Checks if the neo device is online. See [icsneo_isOnline()](libicsneo_sys::icsneo_isOnline) for more details
 ///
 /// TODO: Description here
-pub fn is_online(device: &neodevice_t) -> Result<bool, Error> {
+pub fn is_online(device: &neodevice_t) -> Result<bool> {
     // extern bool DLLExport icsneo_isOnline(const neodevice_t* device);
     let success = unsafe {
         icsneo_isOnline(device)
@@ -305,7 +329,7 @@ pub fn is_message_polling_enabled(device: &neodevice_t) -> bool {
 /// See [icsneo_getMessages()](libicsneo_sys::icsneo_getMessages) for more details
 ///
 /// TODO: Description here
-pub fn get_messages(device: &neodevice_t, timeout: u64) -> Result<Vec<neomessage_t>, Error> {
+pub fn get_messages(device: &neodevice_t, timeout: u64) -> Result<Vec<neomessage_t>> {
     // extern bool DLLExport icsneo_getMessages(const neodevice_t* device, neomessage_t* messages, size_t* items, uint64_t timeout);
     let mut count: u64 = 0;
     let success = unsafe {
@@ -346,7 +370,7 @@ pub fn get_messages(device: &neodevice_t, timeout: u64) -> Result<Vec<neomessage
 /// See [icsneo_getPollingMessageLimit()](libicsneo_sys::icsneo_getPollingMessageLimit) for more details
 ///
 /// TODO: Description here
-pub fn get_polling_message_limit(device: &neodevice_t) -> Result<i32, Error> {
+pub fn get_polling_message_limit(device: &neodevice_t) -> Result<i32> {
     let count = unsafe {
         icsneo_getPollingMessageLimit(device)
     };
@@ -360,7 +384,7 @@ pub fn get_polling_message_limit(device: &neodevice_t) -> Result<i32, Error> {
 /// See [icsneo_setPollingMessageLimit()](libicsneo_sys::icsneo_setPollingMessageLimit) for more details
 ///
 /// TODO: Description here
-pub fn set_polling_message_limit(device: &neodevice_t, message_count: u64) -> Result<(), Error> {
+pub fn set_polling_message_limit(device: &neodevice_t, message_count: u64) -> Result<()> {
     let success = unsafe {
         icsneo_setPollingMessageLimit(device, message_count)
     };
@@ -375,7 +399,7 @@ pub fn set_polling_message_limit(device: &neodevice_t, message_count: u64) -> Re
 /// See [icsneo_transmit()](libicsneo_sys::icsneo_transmit) for more details
 ///
 /// TODO: Description here
-pub fn transmit(device: &neodevice_t, message: &neomessage_t) -> Result<(), Error> {
+pub fn transmit(device: &neodevice_t, message: &neomessage_t) -> Result<()> {
     let success = unsafe {
         icsneo_transmit(device, message)
     };
@@ -391,7 +415,7 @@ pub fn transmit(device: &neodevice_t, message: &neomessage_t) -> Result<(), Erro
 /// See [icsneo_transmitMessages()](libicsneo_sys::icsneo_transmitMessages) for more details
 ///
 /// TODO: Description here
-pub fn transmit_messages(device: &neodevice_t, messages: &Vec<neomessage_t>) -> Result<(), Error> {
+pub fn transmit_messages(device: &neodevice_t, messages: &Vec<neomessage_t>) -> Result<()> {
     let success = unsafe {
         icsneo_transmitMessages(device, messages.as_ptr(), messages.len() as u64)
     };
@@ -407,7 +431,7 @@ pub fn transmit_messages(device: &neodevice_t, messages: &Vec<neomessage_t>) -> 
 /// See [icsneo_describeDevice()](libicsneo_sys::icsneo_describeDevice) for more details
 ///
 /// TODO: Description here
-pub fn describe_device(device: &neodevice_t) -> Result<String, Error> {
+pub fn describe_device(device: &neodevice_t) -> Result<String> {
     let mut count = 0u64;
     let success = unsafe {
         icsneo_describeDevice(device, std::ptr::null_mut(), &mut count)
@@ -452,7 +476,7 @@ pub fn get_network_by_number(device: &neodevice_t, neo_net_type: neonettype_t, n
 /// See [icsneo_getProductName()](libicsneo_sys::icsneo_getProductName) for more details
 ///
 /// TODO: Description here
-pub fn get_product_name(device: &neodevice_t) -> Result<String, Error> {
+pub fn get_product_name(device: &neodevice_t) -> Result<String> {
     let mut count = 0u64;
     let success = unsafe {
         icsneo_getProductName(device, std::ptr::null_mut(), &mut count)
@@ -488,7 +512,7 @@ pub fn get_product_name(device: &neodevice_t) -> Result<String, Error> {
 /// See [icsneo_getProductNameForType()](libicsneo_sys::icsneo_getProductNameForType) for more details
 ///
 /// TODO: Description here
-pub fn get_product_name_for_type(device: devicetype_t) -> Result<String, Error> {
+pub fn get_product_name_for_type(device: devicetype_t) -> Result<String> {
     let mut count = 0u64;
     let success = unsafe {
         icsneo_getProductNameForType(device, std::ptr::null_mut(), &mut count)
@@ -584,7 +608,7 @@ pub fn set_write_blocks(device: &neodevice_t, blocks: bool) {
 /// See [icsneo_getEvents()](libicsneo_sys::icsneo_getEvents) for more details
 ///
 /// TODO: Description here
-pub fn get_events() -> Result<Vec<neoevent_t>, Error> {
+pub fn get_events() -> Result<Vec<neoevent_t>> {
     // extern bool DLLExport icsneo_getEvents(neoevent_t* events, size_t* size);
     let mut size: size_t = 0;
     let success = unsafe {
@@ -622,7 +646,7 @@ pub fn get_events() -> Result<Vec<neoevent_t>, Error> {
 /// See [icsneo_getDeviceEvents()](libicsneo_sys::icsneo_getDeviceEvents) for more details
 ///
 /// TODO: Description here
-pub fn get_device_events(device: &neodevice_t) -> Result<Vec<neoevent_t>, Error> {
+pub fn get_device_events(device: &neodevice_t) -> Result<Vec<neoevent_t>> {
     // extern bool DLLExport icsneo_getDeviceEvents(const neodevice_t* device, neoevent_t* events, size_t* size);
     let mut size: size_t = 0;
     let success = unsafe {
@@ -700,7 +724,7 @@ pub fn get_event_limit() -> size_t {
 /// See [icsneo_getSupportedDevices()](libicsneo_sys::icsneo_getSupportedDevices) for more details
 ///
 /// TODO: Description here
-pub fn get_supported_devices() -> Result<Vec<devicetype_t>, Error> {
+pub fn get_supported_devices() -> Result<Vec<devicetype_t>> {
     // extern bool DLLExport icsneo_getSupportedDevices(devicetype_t* devices, size_t* count);
     let mut size: size_t = 0;
     let success = unsafe {
@@ -732,7 +756,7 @@ pub fn get_supported_devices() -> Result<Vec<devicetype_t>, Error> {
 /// See [icsneo_getTimestampResolution()](libicsneo_sys::icsneo_getTimestampResolution) for more details
 ///
 /// TODO: Description here
-pub fn get_timestamp_resolution(device: &neodevice_t) -> Result<u16, Error> {
+pub fn get_timestamp_resolution(device: &neodevice_t) -> Result<u16> {
     // extern bool DLLExport icsneo_getTimestampResolution(const neodevice_t* device, uint16_t* resolution);
     let mut resolution = 0u16;
     let success = unsafe {
@@ -750,7 +774,7 @@ pub fn get_timestamp_resolution(device: &neodevice_t) -> Result<u16, Error> {
 /// See [icsneo_getDigitalIO()](libicsneo_sys::icsneo_getDigitalIO) for more details
 ///
 /// TODO: Description here
-pub fn get_digital_io(device: &neodevice_t, io_type: neoio_t, io_number: u32) -> Result<bool, Error> {
+pub fn get_digital_io(device: &neodevice_t, io_type: neoio_t, io_number: u32) -> Result<bool> {
     // extern bool DLLExport icsneo_getTimestampResolution(const neodevice_t* device, uint16_t* resolution);
     let mut value = false;
     let success = unsafe {
@@ -769,7 +793,7 @@ pub fn get_digital_io(device: &neodevice_t, io_type: neoio_t, io_number: u32) ->
 /// See [icsneo_setDigitalIO()](libicsneo_sys::icsneo_setDigitalIO) for more details
 ///
 /// TODO: Description here
-pub fn set_digital_io(device: &neodevice_t, io_type: neoio_t, io_number: u32, value: bool) -> Result<(), Error> {
+pub fn set_digital_io(device: &neodevice_t, io_type: neoio_t, io_number: u32, value: bool) -> Result<()> {
     // extern bool DLLExport icsneo_setDigitalIO(const neodevice_t* device, neoio_t type, uint32_t number, bool value);
     let success = unsafe {
         icsneo_setDigitalIO(device, io_type, io_number, value)
