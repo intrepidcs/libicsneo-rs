@@ -6,17 +6,54 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyOSError;
 use std::fmt;
 
-trait SerialNumber {
-    fn get_serial_number(&self) -> String;
-}
+#[pyclass]
+#[derive(Debug)]
+#[repr(transparent)]
+pub struct NeoDevice(neodevice_t);
 
-impl SerialNumber for libicsneo_sys::neodevice_t {
-    fn get_serial_number(&self) -> String {
-        let serial: String = self.serial.map(|v| v as u8 as char).into_iter().collect();
-        serial
+// We are making the assumption here that everything in neodevice_t is thread safe.
+unsafe impl Send for NeoDevice {}
+
+
+impl std::ops::Deref for NeoDevice {
+    type Target = neodevice_t;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }
 
+impl std::ops::DerefMut for NeoDevice {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
+    }
+}
+
+#[pymethods]
+impl NeoDevice {
+    #[new]
+    fn new() -> Self {
+        Self {
+            0: neodevice_t {
+                device: 0 as *mut std::os::raw::c_void,
+                handle: 0i32,
+                serial: [0i8; 7],
+                type_: 0,
+            },
+        }
+    }
+
+    fn __str__(&self) -> String {
+        // TODO: Improve error handling here
+        describe_device(&self).unwrap()
+    }
+
+    fn __repr__(&self) -> String {
+        // TODO: Improve error handling here
+        let description = describe_device(&self).unwrap();
+        format!("<NeoDevice {description}").to_string()
+    }
+}
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -35,7 +72,12 @@ impl std::error::Error for Error {}
 
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Oh no!")
+        match &self {
+            Self::NoDevicesFound => write!(f, "No Devices Found!"),
+            Self::ErrorOccurred(e) => write!(f, "Error Occurred: ({:#?})", e),
+            Self::CriticalError(s) => write!(f, "Critical Error: {s}"),
+            Self::DeviceInvalid => write!(f, "Device Invalid"),
+        }
     }
 }
 
@@ -64,8 +106,8 @@ impl std::convert::From<Error> for PyErr {
 /// }
 /// */
 /// ```
-//#[pyfunction]
-pub fn find_all_devices() -> Result<Vec<neodevice_t>> {
+#[pyfunction]
+pub fn find_all_devices() -> Result<Vec<NeoDevice>> {
     // Get the device count
     let device_count = unsafe {
         let mut device_count = 0;
@@ -82,16 +124,11 @@ pub fn find_all_devices() -> Result<Vec<neodevice_t>> {
     }
     let mut devices = Vec::with_capacity(device_count as usize);
     for _ in 0..device_count {
-        devices.push(neodevice_t {
-            device: 0 as *mut std::os::raw::c_void,
-            handle: 0i32,
-            serial: [0i8; 7],
-            type_: 0,
-        });
+        devices.push(NeoDevice::new());
     }
     unsafe {
         let mut device_count = device_count;
-        icsneo_findAllDevices(devices.as_mut_ptr(), &mut device_count);
+        icsneo_findAllDevices(devices.as_mut_ptr() as *mut neodevice_t, &mut device_count);
         // We are done if we don't have any devices - this should never happen 
         if device_count == 0 {
             return Err(Error::NoDevicesFound);
@@ -190,10 +227,11 @@ pub fn get_last_error() -> Option<neoevent_t> {
 }
 
 /// See [icsneo_isValidNeoDevice()](libicsneo_sys::icsneo_isValidNeoDevice) for more details.
-pub fn is_valid_neodevice(device: &neodevice_t) -> bool {
+#[pyfunction]
+pub fn is_valid_neodevice(device: &NeoDevice) -> bool {
     // extern bool DLLExport icsneo_isValidNeoDevice(const neodevice_t* device);
     unsafe {
-        icsneo_isValidNeoDevice(device)
+        icsneo_isValidNeoDevice(&device.0)
     }
 }
 
@@ -431,10 +469,11 @@ pub fn transmit_messages(device: &neodevice_t, messages: &Vec<neomessage_t>) -> 
 /// See [icsneo_describeDevice()](libicsneo_sys::icsneo_describeDevice) for more details
 ///
 /// TODO: Description here
-pub fn describe_device(device: &neodevice_t) -> Result<String> {
+#[pyfunction]
+pub fn describe_device(device: &NeoDevice) -> Result<String> {
     let mut count = 0u64;
     let success = unsafe {
-        icsneo_describeDevice(device, std::ptr::null_mut(), &mut count)
+        icsneo_describeDevice(&device.0, std::ptr::null_mut(), &mut count)
     };
     // icsneo_describeDevice returns false when we query for the str length.
     if success {
@@ -444,7 +483,7 @@ pub fn describe_device(device: &neodevice_t) -> Result<String> {
     count += 1;
     let mut buffer: Vec<i8> = vec![0; count as usize];
     let success = unsafe { 
-        icsneo_describeDevice(device, buffer.as_mut_ptr(), &mut count)
+        icsneo_describeDevice(&device.0, buffer.as_mut_ptr(), &mut count)
     };
     if !success {
         match get_last_error() {

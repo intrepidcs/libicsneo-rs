@@ -42,7 +42,8 @@ impl NeoDevice {
         }
     }
 
-    /// TODO
+    // TODO
+    /*
     pub fn find_all() -> Result<Vec<Self>, Error> {
         let devices = match safe::find_all_devices() {
             Ok(d) => {
@@ -54,6 +55,7 @@ impl NeoDevice {
         };
         Ok(devices)
     }
+    */
 
     // TODO
     /*
