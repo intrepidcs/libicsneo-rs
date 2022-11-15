@@ -15,7 +15,7 @@ crate-type = ["cdylib"]
 
 
 [dependencies]
-libicsneo-sys = "0.1.13"
+libicsneo-sys = "0.1.14"
 pyo3 = { version = "0.17.3", features = ["extension-module", "abi3", "abi3-py37", "anyhow", "chrono"] }
 
 [features]
