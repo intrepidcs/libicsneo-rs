@@ -4,9 +4,9 @@ use std::ffi::{CStr, CString};
 use libicsneo_sys::*;
 
 #[cfg(feature = "python")]
-use pyo3::prelude::*;
-#[cfg(feature = "python")]
 use pyo3::exceptions::PyOSError;
+#[cfg(feature = "python")]
+use pyo3::prelude::*;
 
 use std::fmt;
 
@@ -17,7 +17,6 @@ pub struct NeoDevice(neodevice_t);
 
 // We are making the assumption here that everything in neodevice_t is thread safe.
 unsafe impl Send for NeoDevice {}
-
 
 impl std::ops::Deref for NeoDevice {
     type Target = neodevice_t;
@@ -33,9 +32,7 @@ impl std::ops::DerefMut for NeoDevice {
     }
 }
 
-#[cfg_attr(feature = "python", pymethods)]
 impl NeoDevice {
-    #[cfg_attr(feature = "python", new)]
     fn new() -> Self {
         Self {
             0: neodevice_t {
@@ -45,6 +42,15 @@ impl NeoDevice {
                 type_: 0,
             },
         }
+    }
+}
+
+#[cfg_attr(feature = "python", pymethods)]
+impl NeoDevice {
+    #[cfg(feature = "python")]
+    #[new]
+    fn py_new() -> Self {
+        Self::new()
     }
 
     fn __str__(&self) -> String {
@@ -81,9 +87,7 @@ impl std::ops::DerefMut for NeoEvent {
     }
 }
 
-#[cfg_attr(feature = "python", pymethods)]
 impl NeoEvent {
-    #[cfg_attr(feature = "python", new)]
     fn new() -> Self {
         Self {
             0: neoevent_t {
@@ -95,6 +99,15 @@ impl NeoEvent {
                 reserved: [0u8; 16],
             },
         }
+    }
+}
+
+#[cfg_attr(feature = "python", pymethods)]
+impl NeoEvent {
+    #[cfg(feature = "python")]
+    #[new]
+    fn py_new() -> Self {
+        Self::new()
     }
 
     fn __str__(&self) -> String {
@@ -108,7 +121,6 @@ impl NeoEvent {
     }
 }
 
-
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Debug)]
 #[repr(transparent)]
@@ -116,7 +128,6 @@ pub struct NeoMessage(neomessage_t);
 
 // We are making the assumption here that everything in neodevice_t is thread safe.
 unsafe impl Send for NeoMessage {}
-
 
 impl std::ops::Deref for NeoMessage {
     type Target = neomessage_t;
@@ -140,9 +151,7 @@ impl<'source> FromPyObject<'source> for NeoMessage {
 }
 */
 
-#[cfg_attr(feature = "python", pymethods)]
 impl NeoMessage {
-    #[cfg_attr(feature = "python", new)]
     fn new() -> Self {
         Self {
             0: neomessage_t {
@@ -154,6 +163,15 @@ impl NeoMessage {
                 messageType: 0u16,
             },
         }
+    }
+}
+
+#[cfg_attr(feature = "python", pymethods)]
+impl NeoMessage {
+    #[cfg(feature = "python")]
+    #[new]
+    fn py_new() -> Self {
+        Self::new()
     }
 
     fn __str__(&self) -> String {
@@ -167,7 +185,6 @@ impl NeoMessage {
     }
 }
 
-
 #[cfg_attr(feature = "python", pyclass)]
 #[derive(Debug)]
 #[repr(transparent)]
@@ -175,7 +192,6 @@ pub struct NeoVersion(neoversion_t);
 
 // We are making the assumption here that everything in neodevice_t is thread safe.
 unsafe impl Send for NeoVersion {}
-
 
 impl std::ops::Deref for NeoVersion {
     type Target = neoversion_t;
@@ -191,13 +207,28 @@ impl std::ops::DerefMut for NeoVersion {
     }
 }
 
-#[cfg_attr(feature = "python", pymethods)]
 impl NeoVersion {
-    #[cfg_attr(feature = "python", new)]
     fn new() -> Self {
         Self {
-            0: neoversion_t { major: 0, minor: 0, patch: 0, metadata: 0 as *const std::os::raw::c_char, buildBranch: 0 as *const std::os::raw::c_char, buildTag: 0 as *const std::os::raw::c_char, reserved: [0i8; 32] }
+            0: neoversion_t {
+                major: 0,
+                minor: 0,
+                patch: 0,
+                metadata: 0 as *const std::os::raw::c_char,
+                buildBranch: 0 as *const std::os::raw::c_char,
+                buildTag: 0 as *const std::os::raw::c_char,
+                reserved: [0i8; 32],
+            },
         }
+    }
+}
+
+#[cfg_attr(feature = "python", pymethods)]
+impl NeoVersion {
+    #[cfg(feature = "python")]
+    #[new]
+    fn py_new() -> Self {
+        Self::new()
     }
 
     fn __str__(&self) -> String {
@@ -207,7 +238,12 @@ impl NeoVersion {
 
     fn __repr__(&self) -> String {
         // TODO: Improve error handling here
-        format!("<class NeoVersion {}.{}.{}>", self.major(), self.minor(), self.patch())
+        format!(
+            "<class NeoVersion {}.{}.{}>",
+            self.major(),
+            self.minor(),
+            self.patch()
+        )
     }
 
     pub fn major(&self) -> u16 {
@@ -223,31 +259,23 @@ impl NeoVersion {
     }
 
     pub fn metadata(&self) -> Result<&str> {
-        println!("DEBUG... address: {:p}", {self.0.metadata});
-        println!("DEBUG... address: {:p}", {self.0.buildBranch});
-        println!("DEBUG... address: {:p}", {self.0.buildTag});
-        let value = unsafe { 
-            CStr::from_ptr(self.0.metadata).to_str().unwrap()
-        };
+        println!("DEBUG... address: {:p}", { self.0.metadata });
+        println!("DEBUG... address: {:p}", { self.0.buildBranch });
+        println!("DEBUG... address: {:p}", { self.0.buildTag });
+        let value = unsafe { CStr::from_ptr(self.0.metadata).to_str().unwrap() };
         Ok(value)
     }
 
     pub fn build_branch(&self) -> Result<&str> {
-        let value = unsafe { 
-            CStr::from_ptr(self.0.buildBranch).to_str().unwrap()
-        };
+        let value = unsafe { CStr::from_ptr(self.0.buildBranch).to_str().unwrap() };
         Ok(value)
     }
 
     pub fn build_tag(&self) -> Result<&str> {
-        let value = unsafe { 
-            CStr::from_ptr(self.0.buildTag).to_str().unwrap()
-        };
+        let value = unsafe { CStr::from_ptr(self.0.buildTag).to_str().unwrap() };
         Ok(value)
     }
 }
-
-
 
 type Result<T> = std::result::Result<T, Error>;
 
@@ -285,12 +313,12 @@ impl std::convert::From<Error> for PyErr {
 /// Find all Intrepid devices connected. Returns a Result of Vec<neodevice_t>. See [icsneo_findAllDevices()](libicsneo_sys::icsneo_findAllDevices) for more details
 ///
 /// TODO: Description here
-/// 
+///
 /// Example:
 /// ```
 /// /*
 /// use libicsneo_rs::*;
-/// 
+///
 /// let devices = find_all_devices().unwrap();
 /// if devices.is_ok() {
 ///     let devices = devices.unwrap();
@@ -309,7 +337,7 @@ pub fn find_all_devices() -> Result<Vec<NeoDevice>> {
         icsneo_findAllDevices(std::ptr::null_mut(), &mut device_count);
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => {},
+            None => {}
         };
         device_count
     };
@@ -324,14 +352,14 @@ pub fn find_all_devices() -> Result<Vec<NeoDevice>> {
     unsafe {
         let mut device_count = device_count;
         icsneo_findAllDevices(devices.as_mut_ptr() as *mut neodevice_t, &mut device_count);
-        // We are done if we don't have any devices - this should never happen 
+        // We are done if we don't have any devices - this should never happen
         if device_count == 0 {
             return Err(Error::NoDevicesFound);
         }
         let event = get_last_error();
         match event {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => {},
+            None => {}
         };
     }
     Ok(devices)
@@ -355,26 +383,28 @@ pub fn free_unconnected_devices() -> Result<()> {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn serial_num_to_string(num: u32) -> Result<String> {
     // extern bool DLLExport icsneo_serialNumToString(uint32_t num, char* str, size_t* count);
-    
+
     // Grab the length needed
     let mut count = 0u64;
-    let success = unsafe {
-        icsneo_serialNumToString(num, std::ptr::null_mut(), &mut count)
-    };
+    let success = unsafe { icsneo_serialNumToString(num, std::ptr::null_mut(), &mut count) };
     // icsneo_serialNumToString returns false when we query for the str length.
     if success {
-        return Err(Error::CriticalError("icsneo_serialNumToString() failed to query length!".to_string()));
+        return Err(Error::CriticalError(
+            "icsneo_serialNumToString() failed to query length!".to_string(),
+        ));
     }
     // Need to account for the null terminator to prevent OBOE
     count += 1;
     let mut buffer: Vec<i8> = vec![0; count as usize];
-    let success = unsafe { 
-        icsneo_serialNumToString(num, buffer.as_mut_ptr(), &mut count)
-    };
+    let success = unsafe { icsneo_serialNumToString(num, buffer.as_mut_ptr(), &mut count) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_serialNumToString() failed to convert!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_serialNumToString() failed to convert!".to_string(),
+                ))
+            }
         };
     }
     // Convert the CStr to a String on success
@@ -384,7 +414,7 @@ pub fn serial_num_to_string(num: u32) -> Result<String> {
             Err(e) => {
                 let msg = format!("Failed to convert serial number buffer to CString: {e}");
                 Err(Error::CriticalError(msg))
-            },
+            }
         };
     };
 }
@@ -396,9 +426,7 @@ pub fn serial_num_to_string(num: u32) -> Result<String> {
 pub fn serial_string_to_num(serial_str: &str) -> u32 {
     // extern uint32_t DLLExport icsneo_serialStringToNum(const char* str);
     let serial = CString::new(serial_str).unwrap();
-    unsafe {
-        icsneo_serialStringToNum(serial.as_ptr())
-    }
+    unsafe { icsneo_serialStringToNum(serial.as_ptr()) }
 }
 
 /// Returns the neoevent_t if an error occurred or None if none. See [icsneo_getLastError()](libicsneo_sys::icsneo_getLastError) for more details
@@ -420,9 +448,7 @@ pub fn get_last_error() -> Option<NeoEvent> {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn is_valid_neodevice(device: &NeoDevice) -> bool {
     // extern bool DLLExport icsneo_isValidNeoDevice(const neodevice_t* device);
-    unsafe {
-        icsneo_isValidNeoDevice(&device.0)
-    }
+    unsafe { icsneo_isValidNeoDevice(&device.0) }
 }
 
 /// Opens a neo device. See [icsneo_openDevice()](libicsneo_sys::icsneo_openDevice) for more details
@@ -431,13 +457,15 @@ pub fn is_valid_neodevice(device: &NeoDevice) -> bool {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn open_device(device: &NeoDevice) -> Result<()> {
     // extern bool DLLExport icsneo_openDevice(const neodevice_t* device);
-    let success = unsafe {
-        icsneo_openDevice(&device.0)
-    };
+    let success = unsafe { icsneo_openDevice(&device.0) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("Bug() get_last_error() should have had an error".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "Bug() get_last_error() should have had an error".to_string(),
+                ))
+            }
         };
     }
     Ok(())
@@ -449,13 +477,15 @@ pub fn open_device(device: &NeoDevice) -> Result<()> {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn close_device(device: &NeoDevice) -> Result<()> {
     // extern bool DLLExport icsneo_closeDevice(const neodevice_t* device);
-    let success = unsafe {
-        icsneo_closeDevice(&device.0)
-    };
+    let success = unsafe { icsneo_closeDevice(&device.0) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("Bug: get_last_error() should have had errors.".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "Bug: get_last_error() should have had errors.".to_string(),
+                ))
+            }
         };
     }
     Ok(())
@@ -466,13 +496,15 @@ pub fn close_device(device: &NeoDevice) -> Result<()> {
 /// TODO: Description here
 pub fn is_open(device: &NeoDevice) -> Result<bool> {
     // extern bool DLLExport icsneo_isOpen(const neodevice_t* device);
-    let success = unsafe {
-        icsneo_isOpen(&device.0)
-    };
+    let success = unsafe { icsneo_isOpen(&device.0) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("Bug: get_last_error() should have had errors.".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "Bug: get_last_error() should have had errors.".to_string(),
+                ))
+            }
         };
     }
     Ok(success)
@@ -484,9 +516,7 @@ pub fn is_open(device: &NeoDevice) -> Result<bool> {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn go_online(device: &NeoDevice) -> Result<()> {
     // extern bool DLLExport icsneo_goOnline(const neodevice_t* device);
-    let success = unsafe {
-        icsneo_goOnline(&device.0)
-    };
+    let success = unsafe { icsneo_goOnline(&device.0) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
@@ -502,9 +532,7 @@ pub fn go_online(device: &NeoDevice) -> Result<()> {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn go_offline(device: &NeoDevice) -> Result<()> {
     // extern bool DLLExport icsneo_goOffline(const neodevice_t* device);
-    let success = unsafe {
-        icsneo_goOffline(&device.0)
-    };
+    let success = unsafe { icsneo_goOffline(&device.0) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
@@ -520,13 +548,11 @@ pub fn go_offline(device: &NeoDevice) -> Result<()> {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn is_online(device: &NeoDevice) -> Result<bool> {
     // extern bool DLLExport icsneo_isOnline(const neodevice_t* device);
-    let success = unsafe {
-        icsneo_isOnline(&device.0)
-    };
+    let success = unsafe { icsneo_isOnline(&device.0) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => {},
+            None => {}
         };
     }
     Ok(success)
@@ -537,9 +563,7 @@ pub fn is_online(device: &NeoDevice) -> Result<bool> {
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn enable_message_polling(device: &NeoDevice) -> bool {
-    unsafe {
-        icsneo_enableMessagePolling(&device.0)
-    }
+    unsafe { icsneo_enableMessagePolling(&device.0) }
 }
 
 /// See [icsneo_disableMessagePolling()](libicsneo_sys::icsneo_disableMessagePolling) for more details
@@ -547,9 +571,7 @@ pub fn enable_message_polling(device: &NeoDevice) -> bool {
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn disable_message_polling(device: &NeoDevice) -> bool {
-    unsafe {
-        icsneo_disableMessagePolling(&device.0)
-    }
+    unsafe { icsneo_disableMessagePolling(&device.0) }
 }
 
 /// See [icsneo_isMessagePollingEnabled()](libicsneo_sys::icsneo_isMessagePollingEnabled) for more details
@@ -557,9 +579,7 @@ pub fn disable_message_polling(device: &NeoDevice) -> bool {
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn is_message_polling_enabled(device: &NeoDevice) -> bool {
-    unsafe {
-        icsneo_isMessagePollingEnabled(&device.0)
-    }
+    unsafe { icsneo_isMessagePollingEnabled(&device.0) }
 }
 
 /// See [icsneo_getMessages()](libicsneo_sys::icsneo_getMessages) for more details
@@ -569,28 +589,40 @@ pub fn is_message_polling_enabled(device: &NeoDevice) -> bool {
 pub fn get_messages(device: &NeoDevice, timeout: u64) -> Result<Vec<NeoMessage>> {
     // extern bool DLLExport icsneo_getMessages(const neodevice_t* device, neomessage_t* messages, size_t* items, uint64_t timeout);
     let mut count: u64 = 0;
-    let success = unsafe {
-        icsneo_getMessages(&device.0, std::ptr::null_mut(), &mut count, timeout)
-    };
+    let success =
+        unsafe { icsneo_getMessages(&device.0, std::ptr::null_mut(), &mut count, timeout) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("Bug() get_last_error() should have had an error".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "Bug() get_last_error() should have had an error".to_string(),
+                ))
+            }
         };
     }
     // Initialize the messages
     let mut messages = Vec::with_capacity(count as usize);
     for _ in 0..count {
         messages.push(NeoMessage::new());
-    };
+    }
     // Grab the messages
     let success = unsafe {
-        icsneo_getMessages(&device.0, messages.as_mut_ptr() as *mut neomessage_t, &mut count, timeout)
+        icsneo_getMessages(
+            &device.0,
+            messages.as_mut_ptr() as *mut neomessage_t,
+            &mut count,
+            timeout,
+        )
     };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("Bug() get_last_error() should have had an error".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "Bug() get_last_error() should have had an error".to_string(),
+                ))
+            }
         };
     }
     Ok(messages)
@@ -602,9 +634,7 @@ pub fn get_messages(device: &NeoDevice, timeout: u64) -> Result<Vec<NeoMessage>>
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_polling_message_limit(device: &NeoDevice) -> Result<i32> {
-    let count = unsafe {
-        icsneo_getPollingMessageLimit(&device.0)
-    };
+    let count = unsafe { icsneo_getPollingMessageLimit(&device.0) };
     if count == -1 {
         return Err(Error::DeviceInvalid);
     };
@@ -617,13 +647,15 @@ pub fn get_polling_message_limit(device: &NeoDevice) -> Result<i32> {
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn set_polling_message_limit(device: &NeoDevice, message_count: u64) -> Result<()> {
-    let success = unsafe {
-        icsneo_setPollingMessageLimit(&device.0, message_count)
-    };
+    let success = unsafe { icsneo_setPollingMessageLimit(&device.0, message_count) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("Bug: get_last_error() should have had errors".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "Bug: get_last_error() should have had errors".to_string(),
+                ))
+            }
         };
     }
     Ok(())
@@ -633,13 +665,15 @@ pub fn set_polling_message_limit(device: &NeoDevice, message_count: u64) -> Resu
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn transmit(device: &NeoDevice, message: &NeoMessage) -> Result<()> {
-    let success = unsafe {
-        icsneo_transmit(&device.0, &message.0)
-    };
+    let success = unsafe { icsneo_transmit(&device.0, &message.0) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("Bug: get_last_error() should have had errors".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "Bug: get_last_error() should have had errors".to_string(),
+                ))
+            }
         };
     }
     Ok(())
@@ -651,12 +685,20 @@ pub fn transmit(device: &NeoDevice, message: &NeoMessage) -> Result<()> {
 //#[cfg_attr(feature = "python", pyfunction)]
 pub fn transmit_messages(device: &NeoDevice, messages: Vec<NeoMessage>) -> Result<()> {
     let success = unsafe {
-        icsneo_transmitMessages(&device.0, messages.as_ptr() as *mut neomessage_t, messages.len() as u64)
+        icsneo_transmitMessages(
+            &device.0,
+            messages.as_ptr() as *mut neomessage_t,
+            messages.len() as u64,
+        )
     };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("Bug: get_last_error() should have had errors".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "Bug: get_last_error() should have had errors".to_string(),
+                ))
+            }
         };
     }
     Ok(())
@@ -668,23 +710,25 @@ pub fn transmit_messages(device: &NeoDevice, messages: Vec<NeoMessage>) -> Resul
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn describe_device(device: &NeoDevice) -> Result<String> {
     let mut count = 0u64;
-    let success = unsafe {
-        icsneo_describeDevice(&device.0, std::ptr::null_mut(), &mut count)
-    };
+    let success = unsafe { icsneo_describeDevice(&device.0, std::ptr::null_mut(), &mut count) };
     // icsneo_describeDevice returns false when we query for the str length.
     if success {
-        return Err(Error::CriticalError("icsneo_serialNumToString() failed to query length!".to_string()));
+        return Err(Error::CriticalError(
+            "icsneo_serialNumToString() failed to query length!".to_string(),
+        ));
     }
     // Need to account for the null terminator to prevent OBOE
     count += 1;
     let mut buffer: Vec<i8> = vec![0; count as usize];
-    let success = unsafe { 
-        icsneo_describeDevice(&device.0, buffer.as_mut_ptr(), &mut count)
-    };
+    let success = unsafe { icsneo_describeDevice(&device.0, buffer.as_mut_ptr(), &mut count) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_describeDevice() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_describeDevice() failed!".to_string(),
+                ))
+            }
         };
     }
     // Convert the CStr to a String on success
@@ -694,7 +738,7 @@ pub fn describe_device(device: &NeoDevice) -> Result<String> {
             Err(e) => {
                 let msg = format!("Failed to device description buffer to CString: {e}");
                 Err(Error::CriticalError(msg))
-            },
+            }
         };
     };
 }
@@ -703,10 +747,12 @@ pub fn describe_device(device: &NeoDevice) -> Result<String> {
 ///
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
-pub fn get_network_by_number(device: &NeoDevice, neo_net_type: neonettype_t, number: u32) -> neonetid_t {
-    unsafe {
-        icsneo_getNetworkByNumber(&device.0, neo_net_type, number)
-    }
+pub fn get_network_by_number(
+    device: &NeoDevice,
+    neo_net_type: neonettype_t,
+    number: u32,
+) -> neonetid_t {
+    unsafe { icsneo_getNetworkByNumber(&device.0, neo_net_type, number) }
 }
 
 /// See [icsneo_getProductName()](libicsneo_sys::icsneo_getProductName) for more details
@@ -715,23 +761,25 @@ pub fn get_network_by_number(device: &NeoDevice, neo_net_type: neonettype_t, num
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_product_name(device: &NeoDevice) -> Result<String> {
     let mut count = 0u64;
-    let success = unsafe {
-        icsneo_getProductName(&device.0, std::ptr::null_mut(), &mut count)
-    };
+    let success = unsafe { icsneo_getProductName(&device.0, std::ptr::null_mut(), &mut count) };
     // icsneo_describeDevice returns false when we query for the str length.
     if success {
-        return Err(Error::CriticalError("icsneo_serialNumToString() failed to query length!".to_string()));
+        return Err(Error::CriticalError(
+            "icsneo_serialNumToString() failed to query length!".to_string(),
+        ));
     }
     // Need to account for the null terminator to prevent OBOE
     count += 1;
     let mut buffer: Vec<i8> = vec![0; count as usize];
-    let success = unsafe { 
-        icsneo_getProductName(&device.0, buffer.as_mut_ptr(), &mut count)
-    };
+    let success = unsafe { icsneo_getProductName(&device.0, buffer.as_mut_ptr(), &mut count) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getProductName() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getProductName() failed!".to_string(),
+                ))
+            }
         };
     }
     // Convert the CStr to a String on success
@@ -741,7 +789,7 @@ pub fn get_product_name(device: &NeoDevice) -> Result<String> {
             Err(e) => {
                 let msg = format!("Failed to device description buffer to CString: {e}");
                 Err(Error::CriticalError(msg))
-            },
+            }
         };
     };
 }
@@ -752,23 +800,25 @@ pub fn get_product_name(device: &NeoDevice) -> Result<String> {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_product_name_for_type(device: devicetype_t) -> Result<String> {
     let mut count = 0u64;
-    let success = unsafe {
-        icsneo_getProductNameForType(device, std::ptr::null_mut(), &mut count)
-    };
+    let success = unsafe { icsneo_getProductNameForType(device, std::ptr::null_mut(), &mut count) };
     // icsneo_describeDevice returns false when we query for the str length.
     if success {
-        return Err(Error::CriticalError("icsneo_serialNumToString() failed to query length!".to_string()));
+        return Err(Error::CriticalError(
+            "icsneo_serialNumToString() failed to query length!".to_string(),
+        ));
     }
     // Need to account for the null terminator to prevent OBOE
     count += 1;
     let mut buffer: Vec<i8> = vec![0; count as usize];
-    let success = unsafe { 
-        icsneo_getProductNameForType(device, buffer.as_mut_ptr(), &mut count)
-    };
+    let success = unsafe { icsneo_getProductNameForType(device, buffer.as_mut_ptr(), &mut count) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getProductNameForType() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getProductNameForType() failed!".to_string(),
+                ))
+            }
         };
     }
     // Convert the CStr to a String on success
@@ -778,7 +828,7 @@ pub fn get_product_name_for_type(device: devicetype_t) -> Result<String> {
             Err(e) => {
                 let msg = format!("Failed to device description buffer to CString: {e}");
                 Err(Error::CriticalError(msg))
-            },
+            }
         };
     };
 }
@@ -790,7 +840,9 @@ pub fn get_product_name_for_type(device: devicetype_t) -> Result<String> {
 pub fn get_version() -> NeoVersion {
     // extern neoversion_t DLLExport icsneo_getVersion(void);
     unsafe {
-        NeoVersion { 0: icsneo_getVersion() }
+        NeoVersion {
+            0: icsneo_getVersion(),
+        }
     }
 }
 
@@ -800,9 +852,7 @@ pub fn get_version() -> NeoVersion {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_baudrate(device: &NeoDevice, netid: neonetid_t) -> i64 {
     // extern int64_t DLLExport icsneo_getBaudrate(const neodevice_t* device, neonetid_t netid);
-    unsafe {
-        icsneo_getBaudrate(&device.0, netid)
-    }
+    unsafe { icsneo_getBaudrate(&device.0, netid) }
 }
 
 /// See [icsneo_setBaudrate()](libicsneo_sys::icsneo_setBaudrate) for more details
@@ -811,9 +861,7 @@ pub fn get_baudrate(device: &NeoDevice, netid: neonetid_t) -> i64 {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn set_baudrate(device: &NeoDevice, netid: neonetid_t, new_baudrate: i64) -> bool {
     // extern int64_t DLLExport icsneo_getBaudrate(const neodevice_t* device, neonetid_t netid);
-    unsafe {
-        icsneo_setBaudrate(&device.0, netid, new_baudrate)
-    }
+    unsafe { icsneo_setBaudrate(&device.0, netid, new_baudrate) }
 }
 
 /// See [icsneo_getFDBaudrate()](libicsneo_sys::icsneo_getFDBaudrate) for more details
@@ -822,9 +870,7 @@ pub fn set_baudrate(device: &NeoDevice, netid: neonetid_t, new_baudrate: i64) ->
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_fd_baudrate(device: &NeoDevice, netid: neonetid_t) -> i64 {
     // extern int64_t DLLExport icsneo_getFDBaudrate(const neodevice_t* device, neonetid_t netid);
-    unsafe {
-        icsneo_getFDBaudrate(&device.0, netid)
-    }
+    unsafe { icsneo_getFDBaudrate(&device.0, netid) }
 }
 
 /// See [icsneo_setFDBaudrate()](libicsneo_sys::icsneo_setFDBaudrate) for more details
@@ -833,9 +879,7 @@ pub fn get_fd_baudrate(device: &NeoDevice, netid: neonetid_t) -> i64 {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn set_fd_baudrate(device: &NeoDevice, netid: neonetid_t, new_baudrate: i64) -> bool {
     // extern int64_t DLLExport icsneo_setFDBaudrate(const neodevice_t* device, neonetid_t netid);
-    unsafe {
-        icsneo_setFDBaudrate(&device.0, netid, new_baudrate)
-    }
+    unsafe { icsneo_setFDBaudrate(&device.0, netid, new_baudrate) }
 }
 
 /// See [icsneo_setWriteBlocks()](libicsneo_sys::icsneo_setWriteBlocks) for more details
@@ -856,26 +900,30 @@ pub fn set_write_blocks(device: &NeoDevice, blocks: bool) {
 pub fn get_events() -> Result<Vec<NeoEvent>> {
     // extern bool DLLExport icsneo_getEvents(neoevent_t* events, size_t* size);
     let mut size: size_t = 0;
-    let success = unsafe {
-        icsneo_getEvents(std::ptr::null_mut(), &mut size)
-    };
+    let success = unsafe { icsneo_getEvents(std::ptr::null_mut(), &mut size) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getEvents() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getEvents() failed!".to_string(),
+                ))
+            }
         };
     }
     let mut events = Vec::with_capacity(size as usize);
     for _ in 0..size {
         events.push(NeoEvent::new());
-    };
-    let success = unsafe {
-        icsneo_getEvents(events.as_mut_ptr() as *mut _, &mut size)
-    };
+    }
+    let success = unsafe { icsneo_getEvents(events.as_mut_ptr() as *mut _, &mut size) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getEvents() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getEvents() failed!".to_string(),
+                ))
+            }
         };
     }
     Ok(events)
@@ -888,26 +936,31 @@ pub fn get_events() -> Result<Vec<NeoEvent>> {
 pub fn get_device_events(device: &NeoDevice) -> Result<Vec<NeoEvent>> {
     // extern bool DLLExport icsneo_getDeviceEvents(const neodevice_t* device, neoevent_t* events, size_t* size);
     let mut size: size_t = 0;
-    let success = unsafe {
-        icsneo_getDeviceEvents(&device.0, std::ptr::null_mut(), &mut size)
-    };
+    let success = unsafe { icsneo_getDeviceEvents(&device.0, std::ptr::null_mut(), &mut size) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getDeviceEvents() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getDeviceEvents() failed!".to_string(),
+                ))
+            }
         };
     }
     let mut events = Vec::with_capacity(size as usize);
     for _ in 0..size {
         events.push(NeoEvent::new());
-    };
-    let success = unsafe {
-        icsneo_getDeviceEvents(&device.0, events.as_mut_ptr() as *mut _, &mut size)
-    };
+    }
+    let success =
+        unsafe { icsneo_getDeviceEvents(&device.0, events.as_mut_ptr() as *mut _, &mut size) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getDeviceEvents() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getDeviceEvents() failed!".to_string(),
+                ))
+            }
         };
     }
     Ok(events)
@@ -952,9 +1005,7 @@ pub fn set_event_limit(new_limit: size_t) {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_event_limit() -> size_t {
     // extern size_t DLLExport icsneo_getEventLimit(void);
-    unsafe {
-        icsneo_getEventLimit()
-    }
+    unsafe { icsneo_getEventLimit() }
 }
 
 /// See [icsneo_getSupportedDevices()](libicsneo_sys::icsneo_getSupportedDevices) for more details
@@ -964,28 +1015,31 @@ pub fn get_event_limit() -> size_t {
 pub fn get_supported_devices() -> Result<Vec<devicetype_t>> {
     // extern bool DLLExport icsneo_getSupportedDevices(devicetype_t* devices, size_t* count);
     let mut size: size_t = 0;
-    let success = unsafe {
-        icsneo_getSupportedDevices(std::ptr::null_mut(), &mut size)
-    };
+    let success = unsafe { icsneo_getSupportedDevices(std::ptr::null_mut(), &mut size) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getSupportedDevices() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getSupportedDevices() failed!".to_string(),
+                ))
+            }
         };
     }
     let mut device_types = Vec::with_capacity(size as usize);
     for _ in 0..size {
         device_types.push(0 as devicetype_t);
-    };
-    let success = unsafe {
-        icsneo_getSupportedDevices(device_types.as_mut_ptr(), &mut size)
-    };
+    }
+    let success = unsafe { icsneo_getSupportedDevices(device_types.as_mut_ptr(), &mut size) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getSupportedDevices() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getSupportedDevices() failed!".to_string(),
+                ))
+            }
         };
-        
     }
     Ok(device_types)
 }
@@ -997,13 +1051,15 @@ pub fn get_supported_devices() -> Result<Vec<devicetype_t>> {
 pub fn get_timestamp_resolution(device: &NeoDevice) -> Result<u16> {
     // extern bool DLLExport icsneo_getTimestampResolution(const neodevice_t* device, uint16_t* resolution);
     let mut resolution = 0u16;
-    let success = unsafe {
-        icsneo_getTimestampResolution(&device.0, &mut resolution)
-    };
+    let success = unsafe { icsneo_getTimestampResolution(&device.0, &mut resolution) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getTimestampResolution() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getTimestampResolution() failed!".to_string(),
+                ))
+            }
         };
     }
     Ok(resolution)
@@ -1016,15 +1072,16 @@ pub fn get_timestamp_resolution(device: &NeoDevice) -> Result<u16> {
 pub fn get_digital_io(device: &NeoDevice, io_type: neoio_t, io_number: u32) -> Result<bool> {
     // extern bool DLLExport icsneo_getTimestampResolution(const neodevice_t* device, uint16_t* resolution);
     let mut value = false;
-    let success = unsafe {
-        icsneo_getDigitalIO(&device.0, io_type, io_number, &mut value)
-    };
+    let success = unsafe { icsneo_getDigitalIO(&device.0, io_type, io_number, &mut value) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_getDigitalIO() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_getDigitalIO() failed!".to_string(),
+                ))
+            }
         };
-        
     }
     Ok(value)
 }
@@ -1033,15 +1090,22 @@ pub fn get_digital_io(device: &NeoDevice, io_type: neoio_t, io_number: u32) -> R
 ///
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
-pub fn set_digital_io(device: &NeoDevice, io_type: neoio_t, io_number: u32, value: bool) -> Result<()> {
+pub fn set_digital_io(
+    device: &NeoDevice,
+    io_type: neoio_t,
+    io_number: u32,
+    value: bool,
+) -> Result<()> {
     // extern bool DLLExport icsneo_setDigitalIO(const neodevice_t* device, neoio_t type, uint32_t number, bool value);
-    let success = unsafe {
-        icsneo_setDigitalIO(&device.0, io_type, io_number, value)
-    };
+    let success = unsafe { icsneo_setDigitalIO(&device.0, io_type, io_number, value) };
     if !success {
         match get_last_error() {
             Some(e) => return Err(Error::ErrorOccurred(e)),
-            None => return Err(Error::CriticalError("icsneo_setDigitalIO() failed!".to_string())),
+            None => {
+                return Err(Error::CriticalError(
+                    "icsneo_setDigitalIO() failed!".to_string(),
+                ))
+            }
         };
     }
     Ok(())
@@ -1053,9 +1117,7 @@ pub fn set_digital_io(device: &NeoDevice, io_type: neoio_t, io_number: u32, valu
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn is_termination_supported_for(device: &NeoDevice, netid: neonetid_t) -> bool {
     // extern bool DLLExport icsneo_isTerminationSupportedFor(const neodevice_t* device, neonetid_t netid);
-    unsafe {
-        icsneo_isTerminationSupportedFor(&device.0, netid)
-    }
+    unsafe { icsneo_isTerminationSupportedFor(&device.0, netid) }
 }
 
 /// See [icsneo_canTerminationBeEnabledFor()](libicsneo_sys::icsneo_canTerminationBeEnabledFor) for more details
@@ -1064,9 +1126,7 @@ pub fn is_termination_supported_for(device: &NeoDevice, netid: neonetid_t) -> bo
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn can_termination_be_enabled_for(device: &NeoDevice, netid: neonetid_t) -> bool {
     // extern bool DLLExport icsneo_canTerminationBeEnabledFor(const neodevice_t* device, neonetid_t netid);
-    unsafe {
-        icsneo_canTerminationBeEnabledFor(&device.0, netid)
-    }
+    unsafe { icsneo_canTerminationBeEnabledFor(&device.0, netid) }
 }
 
 /// See [icsneo_isTerminationEnabledFor()](libicsneo_sys::icsneo_isTerminationEnabledFor) for more details
@@ -1075,9 +1135,7 @@ pub fn can_termination_be_enabled_for(device: &NeoDevice, netid: neonetid_t) -> 
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn is_termination_enabled_for(device: &NeoDevice, netid: neonetid_t) -> bool {
     // extern bool DLLExport icsneo_isTerminationEnabledFor(const neodevice_t* device, neonetid_t netid);
-    unsafe {
-        icsneo_isTerminationEnabledFor(&device.0, netid)
-    }
+    unsafe { icsneo_isTerminationEnabledFor(&device.0, netid) }
 }
 
 /// See [icsneo_setTerminationFor()](libicsneo_sys::icsneo_setTerminationFor) for more details
@@ -1086,9 +1144,7 @@ pub fn is_termination_enabled_for(device: &NeoDevice, netid: neonetid_t) -> bool
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn set_termination_for(device: &NeoDevice, netid: neonetid_t, enabled: bool) -> bool {
     // extern bool DLLExport icsneo_setTerminationFor(const neodevice_t* device, neonetid_t netid, bool enabled);
-    unsafe {
-        icsneo_setTerminationFor(&device.0, netid, enabled)
-    }
+    unsafe { icsneo_setTerminationFor(&device.0, netid, enabled) }
 }
 
 // TODO: extern int DLLExport icsneo_addMessageCallback(const neodevice_t* device, void (*callback)(neomessage_t), void*);
@@ -1119,7 +1175,7 @@ mod tests {
                     Error::NoDevicesFound => assert!(true),
                     _ => assert!(false),
                 };
-            },
+            }
             _ => assert!(false),
         };
     }
@@ -1225,6 +1281,4 @@ mod tests {
 
         // TODO: Need a positive test here.
     }
-
-    
 }

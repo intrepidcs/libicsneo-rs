@@ -17,11 +17,12 @@ crate-type = ["cdylib"]
 [dependencies]
 libicsneo-sys = "0.1.14"
 
-
-[dependencies.python]
-pyo3 = { version = "0.17.3", features = ["extension-module", "abi3", "abi3-py37", "anyhow", "chrono"] }
+[dependencies.pyo3]
+version = "0.17.3"
+features = ["extension-module", "abi3", "abi3-py37", "anyhow", "chrono"]
+optional = true
 
 [features]
 default = ["test_zero_devices"]
 test_zero_devices = []
-python = []
+python = ["pyo3"]
