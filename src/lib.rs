@@ -4,6 +4,8 @@
 use libicsneo_sys::neodevice_t;
 
 pub mod safe;
+
+#[cfg(feature = "python")]
 mod python;
 
 /// Represents an Intrepid Control Systems Device

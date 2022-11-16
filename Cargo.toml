@@ -1,6 +1,6 @@
 [package]
 name = "libicsneo-rs"
-version = "0.1.4"
+version = "0.1.5"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/intrepidcs/libicsneo-rs"
@@ -10,14 +10,18 @@ description = "Rust API for libicsneo"
 keywords = ["libicsneo"]
 
 [lib]
-name = "libicsneo"
+name = "icsneo"
 crate-type = ["cdylib"]
 
 
 [dependencies]
 libicsneo-sys = "0.1.14"
+
+
+[dependencies.python]
 pyo3 = { version = "0.17.3", features = ["extension-module", "abi3", "abi3-py37", "anyhow", "chrono"] }
 
 [features]
 default = ["test_zero_devices"]
 test_zero_devices = []
+python = []
