@@ -259,9 +259,6 @@ impl NeoVersion {
     }
 
     pub fn metadata(&self) -> Result<&str> {
-        println!("DEBUG... address: {:p}", { self.0.metadata });
-        println!("DEBUG... address: {:p}", { self.0.buildBranch });
-        println!("DEBUG... address: {:p}", { self.0.buildTag });
         let value = unsafe { CStr::from_ptr(self.0.metadata).to_str().unwrap() };
         Ok(value)
     }

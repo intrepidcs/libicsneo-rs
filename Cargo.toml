@@ -1,6 +1,6 @@
 [package]
 name = "icsneo"
-version = "0.1.5"
+version = "0.1.6"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/intrepidcs/libicsneo-rs"
@@ -10,7 +10,7 @@ description = "Rust API for libicsneo"
 keywords = ["libicsneo"]
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["lib", "cdylib"]
 
 
 [dependencies]
