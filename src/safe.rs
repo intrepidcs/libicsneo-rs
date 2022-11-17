@@ -1220,14 +1220,7 @@ mod tests {
 
     #[test]
     fn test_is_valid_neodevice() {
-        use libicsneo_sys::neodevice_t;
-
-        let device = neodevice_t {
-            device: 0 as *mut std::os::raw::c_void,
-            handle: 0i32,
-            serial: [0i8; 7],
-            type_: 0,
-        };
+        let device = NeoDevice::new();
 
         assert_eq!(is_valid_neodevice(&device), false);
 
@@ -1247,14 +1240,7 @@ mod tests {
     #[test]
     #[should_panic]
     fn test_is_open() {
-        use libicsneo_sys::neodevice_t;
-
-        let device = neodevice_t {
-            device: 0 as *mut std::os::raw::c_void,
-            handle: 0i32,
-            serial: [0i8; 7],
-            type_: 0,
-        };
+        let device = NeoDevice::new();
         // This will panic since we are passing in an invalid neodevice_t
         assert_eq!(is_open(&device).unwrap(), false);
 
@@ -1263,14 +1249,10 @@ mod tests {
 
     #[test]
     fn test_online() {
-        use libicsneo_sys::neodevice_t;
 
-        let _device = neodevice_t {
-            device: 0 as *mut std::os::raw::c_void,
-            handle: 0i32,
-            serial: [0i8; 7],
-            type_: 0,
-        };
+        let device = NeoDevice::new();
+        assert_eq!(is_online(&device).unwrap(), false);
+
 
         // TODO:
         /*
