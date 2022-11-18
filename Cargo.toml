@@ -1,6 +1,6 @@
 [package]
 name = "icsneo"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/intrepidcs/libicsneo-rs"
@@ -23,7 +23,5 @@ features = ["extension-module", "abi3", "abi3-py37", "anyhow", "chrono"]
 optional = true
 
 [features]
-default = ["test_zero_devices"]
-test_zero_devices = []
+default = []
 python = ["pyo3"]
-#python = []
