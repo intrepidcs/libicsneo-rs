@@ -1,9 +1,10 @@
 use pyo3::prelude::*;
-use crate::safe::*;
+use crate::native::*;
 
 /// A Python module implemented in Rust. The name of this function must match
 /// the `lib.name` setting in the `Cargo.toml`, else Python will not be able to
 /// import the module.
+#[pymodule]
 #[cfg_attr(feature = "python", pymodule)]
 fn icsneo(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(find_all_devices, m)?)?;
@@ -15,6 +16,7 @@ fn icsneo(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(get_last_error, m)?)?;
     m.add_function(wrap_pyfunction!(open_device, m)?)?;
     m.add_function(wrap_pyfunction!(close_device, m)?)?;
+    m.add_function(wrap_pyfunction!(is_open, m)?)?;
     m.add_function(wrap_pyfunction!(go_online, m)?)?;
     m.add_function(wrap_pyfunction!(go_offline, m)?)?;
     m.add_function(wrap_pyfunction!(is_online, m)?)?;
