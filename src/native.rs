@@ -157,36 +157,89 @@ impl NeoEvent {
     }
 }
 
-/// Represents a network message from or to an Intrepid device. 
-#[cfg_attr(feature = "python", pyclass)]
-#[derive(Debug)]
-#[repr(transparent)]
-pub struct NeoMessage(pub neomessage_t);
 
-// We are making the assumption here that everything in neodevice_t is thread safe.
-unsafe impl Send for NeoMessage {}
+macro_rules! define_message {
+    ($name:ident, $inner_name:ident) => {
+        #[cfg_attr(feature = "python", pyclass)]
+        #[derive(Debug)]
+        #[repr(transparent)]
+        pub struct $name(pub $inner_name);
 
-impl std::ops::Deref for NeoMessage {
-    type Target = neomessage_t;
+        // We are making the assumption here that everything is thread safe.
+        unsafe impl Send for $name {}
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
+        impl std::ops::Deref for $name {
+            type Target = $inner_name;
+        
+            fn deref(&self) -> &Self::Target {
+                &self.0
+            }
+        }
+        
+        impl std::ops::DerefMut for $name {
+            fn deref_mut(&mut self) -> &mut Self::Target {
+                &mut self.0
+            }
+        }
+
+        #[cfg_attr(feature = "python", pymethods)]
+        impl $name {
+            #[cfg(feature = "python")]
+            #[new]
+            fn py_new() -> Self {
+                Self::new()
+            }
+
+            fn __str__(&self) -> String {
+                // TODO: Improve error handling here
+                "TODO".to_string()
+            }
+
+            fn __repr__(&self) -> String {
+                // TODO: Improve error handling here
+                "TODO".to_string()
+            }
+        }
     }
 }
 
-impl std::ops::DerefMut for NeoMessage {
-    fn deref_mut(&mut self) -> &mut Self::Target {
-        &mut self.0
+macro_rules! define_message_from {
+    ($name:ident, $from_name:ident) => {
+        impl From<$from_name> for $name {
+            fn from(msg: $from_name) -> Self {
+                unsafe {
+                    std::mem::transmute::<$from_name, $name>(msg)
+                }
+            }
+        }
     }
 }
 
-/*
-impl<'source> FromPyObject<'source> for NeoMessage {
-    fn extract(ob: &'source PyAny) -> PyResult<Self> {
-        Ok(ob)
-    }
-}
-*/
+define_message!(NeoMessage, neomessage_t);
+define_message!(NeoMessageFrame, neomessage_frame_t);
+define_message!(NeoMessageCan, neomessage_can_t);
+define_message!(NeoMessageCanError, neomessage_can_error_t);
+define_message!(NeoMessageEth, neomessage_eth_t);
+
+define_message_from!(NeoMessageFrame, NeoMessage);
+define_message_from!(NeoMessageFrame, NeoMessageCan);
+define_message_from!(NeoMessageFrame, NeoMessageCanError);
+define_message_from!(NeoMessageFrame, NeoMessageEth);
+
+define_message_from!(NeoMessageCan, NeoMessage);
+define_message_from!(NeoMessageCan, NeoMessageFrame);
+define_message_from!(NeoMessageCan, NeoMessageCanError);
+define_message_from!(NeoMessageCan, NeoMessageEth);
+
+define_message_from!(NeoMessageCanError, NeoMessage);
+define_message_from!(NeoMessageCanError, NeoMessageFrame);
+define_message_from!(NeoMessageCanError, NeoMessageCan);
+define_message_from!(NeoMessageCanError, NeoMessageEth);
+
+define_message_from!(NeoMessageEth, NeoMessage);
+define_message_from!(NeoMessageEth, NeoMessageFrame);
+define_message_from!(NeoMessageEth, NeoMessageCan);
+define_message_from!(NeoMessageEth, NeoMessageCanError);
 
 impl NeoMessage {
     pub fn new() -> Self {
@@ -203,22 +256,87 @@ impl NeoMessage {
     }
 }
 
-#[cfg_attr(feature = "python", pymethods)]
-impl NeoMessage {
-    #[cfg(feature = "python")]
-    #[new]
-    fn py_new() -> Self {
-        Self::new()
+impl NeoMessageFrame {
+    pub fn new() -> Self {
+        Self {
+            0: neomessage_frame_t {
+                status: neomessage_statusbitfield_t { statusBitfield: [0u32; 4] },
+                timestamp: 0u64,
+                _reservedTimestamp: 0u64,
+                data: 0 as *const u8,
+                length: 0,
+                header: [0u8; 4],
+                netid: 0,
+                type_: 0,
+                _reserved0: 0,
+                description: 0,
+                messageType: 0u16,
+                _reserved1: [0u8; 12],
+            },
+        }
     }
+}
 
-    fn __str__(&self) -> String {
-        // TODO: Improve error handling here
-        "TODO".to_string()
+impl NeoMessageCan {
+    pub fn new() -> Self {
+        Self {
+            0: neomessage_can_t {
+                arbid: 0,
+                data: 0 as *const u8,
+                description: 0,
+                dlcOnWire: 0,
+                length: 0,
+                netid: 0,
+                status: neomessage_statusbitfield_t { statusBitfield: [0u32; 4] },
+                type_: 0,
+                _reserved1: [0u8; 12],
+                _reservedTimestamp: 0u64,
+                timestamp: 0u64,
+                messageType: 0u16,
+            },
+        }
     }
+}
 
-    fn __repr__(&self) -> String {
-        // TODO: Improve error handling here
-        "TODO".to_string()
+impl NeoMessageCanError {
+    pub fn new() -> Self {
+        Self {
+            0: neomessage_can_error_t {
+                receiveErrorCount: 0,
+                transmitErrorCount: 0,
+                netid: 0,
+                status: neomessage_statusbitfield_t { statusBitfield: [0u32; 4] },
+                type_: 0,
+                _reserved2: [0u64; 2],
+                _reserved3: [0u8; 5],
+                _reserved4: [0u8; 12],
+                _reservedTimestamp: 0u64,
+                timestamp: 0u64,
+                messageType: 0u16,
+            },
+        }
+    }
+}
+
+impl NeoMessageEth {
+    pub fn new() -> Self {
+        Self {
+            0: neomessage_eth_t {
+                status: neomessage_statusbitfield_t { statusBitfield: [0u32; 4] },
+                timestamp: 0u64,
+                _reservedTimestamp: 0u64,
+                data: 0 as *const u8,
+                length: 0,
+                preemptionFlags: 0,
+                _reservedHeader: [0u8; 3],
+                netid: 0,
+                type_: 0,
+                _reserved0: 0,
+                description: 0,
+                messageType: 0u16,
+                _reserved1: [0u8; 12],
+            },
+        }
     }
 }
 

@@ -4,7 +4,6 @@ use crate::native::*;
 /// A Python module implemented in Rust. The name of this function must match
 /// the `lib.name` setting in the `Cargo.toml`, else Python will not be able to
 /// import the module.
-#[pymodule]
 #[cfg_attr(feature = "python", pymodule)]
 fn icsneo(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(find_all_devices, m)?)?;
@@ -53,6 +52,13 @@ fn icsneo(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
     //m.add_function(wrap_pyfunction!(transmit_messages, m)?)?;
 
     m.add_class::<NeoDevice>()?;
+    m.add_class::<NeoEvent>()?;
+    m.add_class::<NeoVersion>()?;
+    m.add_class::<NeoMessage>()?;
+    m.add_class::<NeoMessageFrame>()?;
+    m.add_class::<NeoMessageCan>()?;
+    m.add_class::<NeoMessageCanError>()?;
+    m.add_class::<NeoMessageEth>()?;
     //m.add_class::<Error>();
     Ok(())
 }
