@@ -1,0 +1,26 @@
+[package]
+name = "libicsneo-py"
+version = "0.0.1"
+edition = "2021"
+publish = false
+
+readme = "README.md"
+# Note: this is symlinked from top level
+license-file = "LICENSE"
+
+[lib]
+name = "libicsneo"
+crate-type = ["cdylib"]
+doc = false
+
+[dependencies]
+regex = "1.7"
+pyo3 = { version = "0.19.0", features = ["extension-module"] }
+#libicsneo-rs = "~0.1.18"
+#libicsneo-rs = { path = "../libicsneo-rs/" }
+
+[build-dependencies]
+pyo3-build-config = "0.19.0"
+
+[package.metadata.release]
+shared-version = true

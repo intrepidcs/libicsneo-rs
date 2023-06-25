@@ -1,4 +1,4 @@
-from libicsneo import *
+from icsneo import *
 
 
 v = get_version()
