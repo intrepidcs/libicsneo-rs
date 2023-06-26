@@ -40,8 +40,7 @@ fn cmake_build_config_type() -> String {
             // Rust runtime is linked with /MD on windows MSVC... MSVC takes Debug and forces /MDd
             // https://www.reddit.com/r/rust/comments/dvmzo2/cargo_external_c_library_windows_debugrelease_hell/
             "RelWithDebInfo"
-        }
-        else {
+        } else {
             "Debug"
         }
     };
@@ -77,12 +76,16 @@ fn setup_linker_libs(build_path: &PathBuf) {
     // output for lib path
     println!(
         "cargo:warning=build search path: {:?}",
-        build_path.join(format!("build/{build_config_type}")).display()
+        build_path
+            .join(format!("build/{build_config_type}"))
+            .display()
     );
     // icsneo lib/dll linker search path
     println!(
         "cargo:rustc-link-search=native={}",
-        build_path.join(format!("build/{build_config_type}")).display()
+        build_path
+            .join(format!("build/{build_config_type}"))
+            .display()
     );
     // fatfs linker search path and addition
     println!(
@@ -107,14 +110,41 @@ fn setup_linker_libs(build_path: &PathBuf) {
             );
             println!("cargo:rustc-link-lib=FTD3XX");
         }
-        "linux" => {
-        }
+        "linux" => {}
         "macos" => {
             println!("cargo:rustc-link-lib=static=icsneoc-static");
             println!("cargo:rustc-link-lib=framework=IOKit");
             println!("cargo:rustc-link-lib=framework=CoreFoundation");
         }
         target_os => panic!("Target OS not supported: {target_os}"),
+    }
+}
+
+fn prepare_git_submodule() {
+    // We don't need to checkout the submodule if we are using a custom libicsneo path
+    if std::env::var("LIBICSNEO_PATH").is_ok() {
+        println!("cargo:warning=Using custom LIBICSNEO_PATH, skipping checking out submodules");
+        return;
+    }
+    let libicsneo_path = libicsneo_path();
+    // This seems to not be needed when including this as a dependency? Why?
+    // checkout the submodule if needed
+    let output = std::process::Command::new("git")
+        .args(["submodule", "update", "--init"])
+        .current_dir(libicsneo_path)
+        .output()
+        .expect("Failed to fetch git submodules!");
+    // Make sure git was successful!
+    if !output.status.success() {
+        println!("cargo:warning=git return code: {}", output.status);
+        let stdout = std::str::from_utf8(&output.stdout).unwrap();
+        for line in stdout.split("\n") {
+            println!("cargo:warning=git stdout: {}", line);
+        }
+        let stderr = std::str::from_utf8(&output.stderr).unwrap();
+        for line in stderr.split("\n") {
+            println!("cargo:warning=git stderr: {}", line);
+        }
     }
 }
 
@@ -135,7 +165,8 @@ fn generate_bindings() {
         .formatter(bindgen::Formatter::Rustfmt)
         .derive_default(true)
         .derive_debug(true)
-        //.derive_partialeq(true)
+        .derive_partialeq(true)
+        .derive_copy(true)
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         //.clang_args(clang_args())
         .generate()
@@ -158,7 +189,11 @@ fn main() {
     println!("cargo:rerun-if-changed={}", header.to_str().unwrap());
     println!("cargo:rerun-if-env-changed=LIBMSVC_PATH");
 
+    prepare_git_submodule();
     generate_bindings();
-    let build_directory = build_libicsneo();
-    setup_linker_libs(&build_directory);
+    // We can skip building if its for docs.rs
+    if std::env::var("DOCS_RS").is_err() {
+        let build_directory = build_libicsneo();
+        setup_linker_libs(&build_directory);
+    }
 }
