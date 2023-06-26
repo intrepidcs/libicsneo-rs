@@ -14,7 +14,7 @@ crate-type = ["lib", "cdylib"]
 
 
 [dependencies]
-libicsneo-sys = "0.1.17"
+libicsneo-sys = { path = "../libicsneo-sys" }
 #pyo3 = {features = ["extension-module", "abi3", "abi3-py37", "anyhow", "chrono"] }
 
 [dependencies.pyo3]

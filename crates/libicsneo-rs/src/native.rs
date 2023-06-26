@@ -178,7 +178,7 @@ impl NeoEvent {
 macro_rules! define_message {
     ($name:ident, $inner_name:ident) => {
         #[cfg_attr(feature = "python", pyclass)]
-        #[derive(Debug)]
+        //#[derive(Debug)]
         #[repr(transparent)]
         pub struct $name(pub $inner_name);
 
@@ -297,20 +297,7 @@ impl NeoMessageFrame {
 impl NeoMessageCan {
     pub fn new() -> Self {
         Self {
-            0: neomessage_can_t {
-                arbid: 0,
-                data: 0 as *const u8,
-                description: 0,
-                dlcOnWire: 0,
-                length: 0,
-                netid: 0,
-                status: neomessage_statusbitfield_t { statusBitfield: [0u32; 4] },
-                type_: 0,
-                _reserved1: [0u8; 12],
-                _reservedTimestamp: 0u64,
-                timestamp: 0u64,
-                messageType: 0u16,
-            },
+            0: neomessage_can_t::default()
         }
     }
 }
@@ -318,19 +305,7 @@ impl NeoMessageCan {
 impl NeoMessageCanError {
     pub fn new() -> Self {
         Self {
-            0: neomessage_can_error_t {
-                receiveErrorCount: 0,
-                transmitErrorCount: 0,
-                netid: 0,
-                status: neomessage_statusbitfield_t { statusBitfield: [0u32; 4] },
-                type_: 0,
-                _reserved2: [0u64; 2],
-                _reserved3: [0u8; 5],
-                _reserved4: [0u8; 12],
-                _reservedTimestamp: 0u64,
-                timestamp: 0u64,
-                messageType: 0u16,
-            },
+            0: neomessage_can_error_t::default()
         }
     }
 }
@@ -338,21 +313,7 @@ impl NeoMessageCanError {
 impl NeoMessageEth {
     pub fn new() -> Self {
         Self {
-            0: neomessage_eth_t {
-                status: neomessage_statusbitfield_t { statusBitfield: [0u32; 4] },
-                timestamp: 0u64,
-                _reservedTimestamp: 0u64,
-                data: 0 as *const u8,
-                length: 0,
-                preemptionFlags: 0,
-                _reservedHeader: [0u8; 3],
-                netid: 0,
-                type_: 0,
-                _reserved0: 0,
-                description: 0,
-                messageType: 0u16,
-                _reserved1: [0u8; 12],
-            },
+            0: neomessage_eth_t::default()
         }
     }
 }
@@ -519,7 +480,7 @@ pub fn serial_num_to_string(num: u32) -> Result<String> {
     // extern bool DLLExport icsneo_serialNumToString(uint32_t num, char* str, size_t* count);
 
     // Grab the length needed
-    let mut count = 0u64;
+    let mut count = 0usize;
     let success = unsafe { icsneo_serialNumToString(num, std::ptr::null_mut(), &mut count) };
     // icsneo_serialNumToString returns false when we query for the str length.
     if success {
@@ -719,7 +680,7 @@ pub fn is_message_polling_enabled(device: &NeoDevice) -> bool {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_messages(device: &NeoDevice, timeout: u64) -> Result<Vec<NeoMessage>> {
     // extern bool DLLExport icsneo_getMessages(const neodevice_t* device, neomessage_t* messages, size_t* items, uint64_t timeout);
-    let mut count: u64 = 0;
+    let mut count: usize = 0;
     let success =
         unsafe { icsneo_getMessages(&device.0, std::ptr::null_mut(), &mut count, timeout) };
     if !success {
@@ -777,7 +738,7 @@ pub fn get_polling_message_limit(device: &NeoDevice) -> Result<i32> {
 ///
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
-pub fn set_polling_message_limit(device: &NeoDevice, message_count: u64) -> Result<()> {
+pub fn set_polling_message_limit(device: &NeoDevice, message_count: usize) -> Result<()> {
     let success = unsafe { icsneo_setPollingMessageLimit(&device.0, message_count) };
     if !success {
         match get_last_error() {
@@ -819,7 +780,7 @@ pub fn transmit_messages(device: &NeoDevice, messages: Vec<NeoMessage>) -> Resul
         icsneo_transmitMessages(
             &device.0,
             messages.as_ptr() as *mut neomessage_t,
-            messages.len() as u64,
+            messages.len() as usize,
         )
     };
     if !success {
@@ -840,7 +801,7 @@ pub fn transmit_messages(device: &NeoDevice, messages: Vec<NeoMessage>) -> Resul
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn describe_device(device: &NeoDevice) -> Result<String> {
-    let mut count = 0u64;
+    let mut count = 0usize;
     let success = unsafe { icsneo_describeDevice(&device.0, std::ptr::null_mut(), &mut count) };
     // icsneo_describeDevice returns false when we query for the str length.
     if success {
@@ -891,7 +852,7 @@ pub fn get_network_by_number(
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_product_name(device: &NeoDevice) -> Result<String> {
-    let mut count = 0u64;
+    let mut count = 0usize;
     let success = unsafe { icsneo_getProductName(&device.0, std::ptr::null_mut(), &mut count) };
     // icsneo_describeDevice returns false when we query for the str length.
     if success {
@@ -930,7 +891,7 @@ pub fn get_product_name(device: &NeoDevice) -> Result<String> {
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_product_name_for_type(device: devicetype_t) -> Result<String> {
-    let mut count = 0u64;
+    let mut count = 0usize;
     let success = unsafe { icsneo_getProductNameForType(device, std::ptr::null_mut(), &mut count) };
     // icsneo_describeDevice returns false when we query for the str length.
     if success {
@@ -1030,7 +991,7 @@ pub fn set_write_blocks(device: &NeoDevice, blocks: bool) {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_events() -> Result<Vec<NeoEvent>> {
     // extern bool DLLExport icsneo_getEvents(neoevent_t* events, size_t* size);
-    let mut size: size_t = 0;
+    let mut size: usize = 0;
     let success = unsafe { icsneo_getEvents(std::ptr::null_mut(), &mut size) };
     if !success {
         match get_last_error() {
@@ -1066,7 +1027,7 @@ pub fn get_events() -> Result<Vec<NeoEvent>> {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_device_events(device: &NeoDevice) -> Result<Vec<NeoEvent>> {
     // extern bool DLLExport icsneo_getDeviceEvents(const neodevice_t* device, neoevent_t* events, size_t* size);
-    let mut size: size_t = 0;
+    let mut size: usize = 0;
     let success = unsafe { icsneo_getDeviceEvents(&device.0, std::ptr::null_mut(), &mut size) };
     if !success {
         match get_last_error() {
@@ -1123,7 +1084,7 @@ pub fn discard_all_device_events(device: &NeoDevice) {
 ///
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
-pub fn set_event_limit(new_limit: size_t) {
+pub fn set_event_limit(new_limit: usize) {
     // extern void DLLExport icsneo_setEventLimit(size_t newLimit);
     unsafe {
         icsneo_setEventLimit(new_limit);
@@ -1134,7 +1095,7 @@ pub fn set_event_limit(new_limit: size_t) {
 ///
 /// TODO: Description here
 #[cfg_attr(feature = "python", pyfunction)]
-pub fn get_event_limit() -> size_t {
+pub fn get_event_limit() -> usize {
     // extern size_t DLLExport icsneo_getEventLimit(void);
     unsafe { icsneo_getEventLimit() }
 }
@@ -1145,7 +1106,7 @@ pub fn get_event_limit() -> size_t {
 #[cfg_attr(feature = "python", pyfunction)]
 pub fn get_supported_devices() -> Result<Vec<devicetype_t>> {
     // extern bool DLLExport icsneo_getSupportedDevices(devicetype_t* devices, size_t* count);
-    let mut size: size_t = 0;
+    let mut size: usize = 0;
     let success = unsafe { icsneo_getSupportedDevices(std::ptr::null_mut(), &mut size) };
     if !success {
         match get_last_error() {
