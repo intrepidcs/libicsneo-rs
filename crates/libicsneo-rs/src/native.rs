@@ -14,8 +14,6 @@ type Result<T> = std::result::Result<T, Error>;
 /// All errors that are returned from this library will be contained here
 #[derive(Debug)]
 pub enum Error {
-    /// No devices were found.
-    NoDevicesFound,
     /// icsneo_getLastError() happened.
     ErrorOccurred(NeoEvent),
     /// Critical API error that shouldn't have happened.
@@ -29,7 +27,6 @@ impl std::error::Error for Error {}
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self {
-            Self::NoDevicesFound => write!(f, "No Devices Found!"),
             Self::ErrorOccurred(e) => write!(f, "Error Occurred: ({:#?})", e),
             Self::CriticalError(s) => write!(f, "Critical Error: {s}"),
             Self::DeviceInvalid => write!(f, "Device Invalid"),
@@ -436,27 +433,18 @@ pub fn find_all_devices() -> Result<Vec<NeoDevice>> {
         };
         device_count
     };
-    // We are done if we don't have any devices
-    if device_count == 0 {
-        return Err(Error::NoDevicesFound);
-    }
-    let mut devices = Vec::with_capacity(device_count as usize);
-    for _ in 0..device_count {
-        devices.push(NeoDevice::new());
-    }
+    let mut devices = Vec::<neodevice_t>::new();
+    devices.resize(device_count, neodevice_t::default());
     unsafe {
         let mut device_count = device_count;
         icsneo_findAllDevices(devices.as_mut_ptr() as *mut neodevice_t, &mut device_count);
-        // We are done if we don't have any devices - this should never happen
-        if device_count == 0 {
-            return Err(Error::NoDevicesFound);
-        }
         let event = get_last_error();
         match event {
             Some(e) => return Err(Error::ErrorOccurred(e)),
             None => {}
         };
     }
+    let devices: Vec<NeoDevice> = devices.iter().map(|d| NeoDevice { 0: *d }).collect();
     Ok(devices)
 }
 
@@ -541,9 +529,13 @@ pub fn get_last_error() -> Option<NeoEvent> {
 
 /// See [icsneo_isValidNeoDevice()](libicsneo_sys::icsneo_isValidNeoDevice) for more details.
 #[cfg_attr(feature = "python", pyfunction)]
-pub fn is_valid_neodevice(device: &NeoDevice) -> bool {
+pub fn is_valid_neodevice(device: &NeoDevice) -> Result<bool> {
     // extern bool DLLExport icsneo_isValidNeoDevice(const neodevice_t* device);
-    unsafe { icsneo_isValidNeoDevice(&device.0) }
+    let is_valid = unsafe { icsneo_isValidNeoDevice(&device.0) };
+    match get_last_error() {
+        Some(e) => Err(Error::ErrorOccurred(e)),
+        None => Ok(is_valid),
+    }
 }
 
 /// Opens a neo device. See [icsneo_openDevice()](libicsneo_sys::icsneo_openDevice) for more details
@@ -1267,13 +1259,15 @@ mod tests {
     fn get_hardware_setup() -> HardwareSetup {
         let value = match find_all_devices() {
             Ok(d) => {
-                if d.len() == 1 {
+                if d.len() == 0 {
+                    HardwareSetup::ZeroDevices
+                }
+                else if d.len() == 1 {
                     HardwareSetup::OneDevice
                 } else {
                     HardwareSetup::TwoDevices
                 }
             },
-            Err(Error::NoDevicesFound) => HardwareSetup::ZeroDevices,
             Err(e) => panic!("ERROR: {:#?}", e),
         };
         free_unconnected_devices().unwrap();
@@ -1284,7 +1278,7 @@ mod tests {
     fn test_get_hardware_setup() {
         use std::time::SystemTime;
         let start = SystemTime::now();
-        for _ in 0..10 {
+        for _ in 0..10000 {
             let _ = get_hardware_setup();
         }
         println!("{:?}", start.elapsed());
@@ -1298,26 +1292,23 @@ mod tests {
     fn test_is_valid_neodevice() {
         // Negative test
         let invalid_device = NeoDevice::new();
-        assert!(!is_valid_neodevice(&invalid_device));
+        assert!(is_valid_neodevice(&invalid_device).is_ok(), "neodevice_t should have thrown an Error");
 
         match get_hardware_setup() {
             HardwareSetup::ZeroDevices => (),
             HardwareSetup::OneDevice | HardwareSetup::TwoDevices => {
+                let devices = find_all_devices().unwrap();
                 // All devices here should be valid
-                for device in find_all_devices().unwrap() {
-                    assert_eq!(is_valid_neodevice(&device), true);
+                for device in &devices {
+                    assert_eq!(is_valid_neodevice(&device).unwrap(), true);
                 }
                 // All devices here should be invalid
                 free_unconnected_devices().unwrap();
-                for device in find_all_devices().unwrap() {
-                    assert_eq!(is_valid_neodevice(&device), false);
+                for device in &devices {
+                    assert!(is_valid_neodevice(&device).is_ok());
                 }
             }
         }
-
-        // Negative test
-        let invalid_device = NeoDevice::new();
-        assert!(!is_valid_neodevice(&invalid_device));
     }
 
     #[test]
@@ -1349,8 +1340,7 @@ mod tests {
                     // Close
                     close_device(&device).unwrap();
                     // Device is no longer valid since we closed it...
-                    //assert_eq!(is_open(&device).unwrap(), false);
-                    assert_eq!(is_valid_neodevice(&device), false);
+                    assert!(is_valid_neodevice(&device).is_ok());
                 }
                 free_unconnected_devices().unwrap();
             }
