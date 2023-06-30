@@ -3,5 +3,6 @@
 members = [
     "crates/libicsneo-sys",
     "crates/libicsneo-rs",
+    "crates/libicsneo-rs-examples",
     "crates/libicsneo-py",
 ]
