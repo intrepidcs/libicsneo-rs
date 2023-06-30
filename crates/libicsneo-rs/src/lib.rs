@@ -9,7 +9,5 @@
 //! 
 //! [GitHub libicsneo-rs](https://github.com/intrepidcs/libicsneo-rs)
 
-pub mod native;
-
-#[cfg(feature = "python")]
-mod python;
+pub mod icsneo;
+pub mod types;
