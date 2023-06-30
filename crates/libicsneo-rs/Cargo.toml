@@ -13,4 +13,4 @@ keywords = ["libicsneo"]
 crate-type = ["lib", "cdylib"]
 
 [dependencies]
-libicsneo-sys = { path = "../libicsneo-sys" }
+libicsneo-sys = { path = "../libicsneo-sys", version="0.2.0" }
